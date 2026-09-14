@@ -109,7 +109,7 @@
 
   <script>
 
-    const SUPABASE_URL = "https://vqcsxozodlduvzwqumoz.supabase.co";";
+   const SUPABASE_URL = "https://vqcsxozodlduvzwqumoz.supabase.co";
     const SUPABASE_KEY = "sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";
 
     async function searchPart() {
@@ -133,8 +133,8 @@
 
         const url =
           SUPABASE_URL +
-         "/rest/v1/branch_stock?Itemcode=eq."
-          encodeURIComponent(part) +
+        "/rest/v1/branch_stock?Itemcode=eq." +
+encodeURIComponent(part) +
           "&select=Itemcode,ItemName,Branch,quantity";
 
         const response = await fetch(url, {
