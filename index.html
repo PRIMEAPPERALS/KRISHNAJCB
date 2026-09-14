@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>JCB Stock Finder</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .search-box {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px;
+      font-size: 17px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 17px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #222;
+      color: white;
+    }
+
+    .result {
+      margin-top: 20px;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    .total {
+      font-weight: bold;
+      font-size: 18px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>JCB Stock Finder</h1>
+
+  <div class="search-box">
+
+    <input
+      type="text"
+      id="partNumber"
+      placeholder="Enter Part Number"
+    >
+
+    <button onclick="searchPart()">
+      SEARCH STOCK
+    </button>
+
+  </div>
+
+  <div id="result"></div>
+
+</div>
+
+<script>
+
+function searchPart() {
+
+  const part = document.getElementById("partNumber").value.trim();
+
+  if (part === "") {
+    alert("Please enter a part number");
+    return;
+  }
+
+  document.getElementById("result").innerHTML =
+    "<div class='result'>" +
+    "<h2>" + part + "</h2>" +
+    "<p>Stock search will appear here.</p>" +
+    "</div>";
+}
+
+</script>
+
+</body>
+</html>
