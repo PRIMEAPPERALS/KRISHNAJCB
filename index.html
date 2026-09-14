@@ -133,7 +133,7 @@
 
         const url =
           SUPABASE_URL +
-        "/rest/v1/branch_stock?Itemcode=eq." +
+        "/rest/v1/branch_stock?Itemcode=ilike." +
 encodeURIComponent(part) +
           "&select=Itemcode,ItemName,Branch,quantity";
 
