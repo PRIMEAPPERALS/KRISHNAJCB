@@ -34,9 +34,9 @@ export default async function handler(req, res) {
 
     // Delete old stock
     const deleteResponse = await fetch(
-      SUPABASE_URL + "/rest/v1/branch_stock",
-      {
-        method: "DELETE",
+    SUPABASE_URL + "/rest/v1/branch_stock?Itemcode=not.is.null",
+{
+  method: "DELETE",
         headers: {
           "apikey": SUPABASE_KEY,
           "Authorization": "Bearer " + SUPABASE_KEY
