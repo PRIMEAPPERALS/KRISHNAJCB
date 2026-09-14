@@ -1,1 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JCB Stock Admin Upload</title>
 
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #222;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #status {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f3f3f3;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>JCB Stock – Admin Upload</h1>
+
+  <p>Select today's complete Excel stock file.</p>
+
+  <input type="password" id="password" placeholder="Admin Password">
+
+  <input type="file" id="file" accept=".xlsx,.xls">
+
+  <button onclick="uploadExcel()">UPLOAD STOCK</button>
+
+  <div id="status">Waiting for file...</div>
+
+<script>
+
+async function uploadExcel() {
+
+  const password = document.getElementById("password").value;
+  const fileInput = document.getElementById("file");
+  const status = document.getElementById("status");
+
+  if (!password) {
+    status.innerText = "Please enter admin password.";
+    return;
+  }
+
+  if (!fileInput.files.length) {
+    status.innerText = "Please select an Excel file.";
+    return;
+  }
+
+  const file = fileInput.files[0];
+
+  status.innerText = "Reading Excel file...";
+
+  try {
+
+    const data = await file.arrayBuffer();
+
+    const workbook = XLSX.read(data, {
+      type: "array"
+    });
+
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+    const rows = XLSX.utils.sheet_to_json(sheet, {
+      defval: null
+    });
+
+    status.innerText = "Excel loaded. Processing " + rows.length + " rows...";
+
+    const cleaned = [];
+
+    for (const row of rows) {
+
+      const itemcode = row["Itemcode"];
+      const itemName = row["ItemName"];
+      const branch = row["Branch"];
+      const quantity = row["Closing Balance"];
+      const dnp = row["DNP"];
+
+      if (
+        itemcode === null ||
+        itemcode === undefined ||
+        branch === null ||
+        branch === undefined ||
+        String(itemcode).trim() === "" ||
+        String(branch).trim() === ""
+      ) {
+        continue;
+      }
+
+      cleaned.push({
+        Itemcode: String(itemcode).trim(),
+        ItemName: itemName ? String(itemName).trim() : "",
+        Branch: String(branch).trim(),
+        quantity: Number(quantity) || 0,
+        DNP: Number(dnp) || 0
+      });
+    }
+
+    status.innerText =
+      "Processed " + cleaned.length + " stock records. Uploading...";
+
+    const response = await fetch("/api/upload", {
+
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        password: password,
+        rows: cleaned
+      })
+
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Upload failed");
+    }
+
+    status.innerText =
+      "✅ SUCCESS! Stock updated successfully.\n\n" +
+      "Records uploaded: " + cleaned.length;
+
+  } catch (error) {
+
+    console.error(error);
+
+    status.innerText =
+      "❌ ERROR: " + error.message;
+
+  }
+
+}
+
+</script>
+
+</body>
+</html>
