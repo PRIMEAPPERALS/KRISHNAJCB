@@ -1,127 +1,90 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>JCB Stock Finder</title>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f6f8;
-      margin: 0;
-      padding: 20px;
-    }
-
-    .container {
-      max-width: 600px;
-      margin: auto;
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 25px;
-    }
-
-    .search-box {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 14px;
-      font-size: 17px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-
-    button {
-      width: 100%;
-      padding: 14px;
-      font-size: 17px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #222;
-      color: white;
-    }
-
-    .result {
-      margin-top: 20px;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-
-    th, td {
-      padding: 10px;
-      border-bottom: 1px solid #ddd;
-      text-align: left;
-    }
-
-    .total {
-      font-weight: bold;
-      font-size: 18px;
-      margin-top: 15px;
-    }
-  </style>
-</head>
-
-<body>
-
-<div class="container">
-
-  <h1>JCB Stock Finder</h1>
-
-  <div class="search-box">
-
-    <input
-      type="text"
-      id="partNumber"
-      placeholder="Enter Part Number"
-    >
-
-    <button onclick="searchPart()">
-      SEARCH STOCK
-    </button>
-
-  </div>
-
-  <div id="result"></div>
-
-</div>
-
 <script>
 
-function searchPart() {
+const SUPABASE_URL = "vqcsxozodlduvzwqumoz";
+const SUPABASE_KEY = "sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";
+
+async function searchPart() {
 
   const part = document.getElementById("partNumber").value.trim();
+  const result = document.getElementById("result");
 
-  if (part === "") {
+  if (!part) {
     alert("Please enter a part number");
     return;
   }
 
-  document.getElementById("result").innerHTML =
-    "<div class='result'>" +
-    "<h2>" + part + "</h2>" +
-    "<p>Stock search will appear here.</p>" +
-    "</div>";
+  result.innerHTML =
+    "<div class='result'><p>Searching...</p></div>";
+
+  try {
+
+    const url =
+      SUPABASE_URL +
+      "/rest/v1/BRANCH%20STOCK?Itemcode=eq." +
+      encodeURIComponent(part) +
+      "&select=Itemcode,ItemName,Branch,quantity";
+
+    const response = await fetch(url, {
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText);
+    }
+
+    const data = await response.json();
+
+    if (data.length === 0) {
+      result.innerHTML =
+        "<div class='result'>" +
+        "<h2>Part Not Found</h2>" +
+        "<p>No stock found for <b>" + part + "</b></p>" +
+        "</div>";
+      return;
+    }
+
+    let total = 0;
+
+    data.forEach(row => {
+      total += Number(row.quantity) || 0;
+    });
+
+    let rows = "";
+
+    data.forEach(row => {
+      rows +=
+        "<tr>" +
+        "<td>" + row.Branch + "</td>" +
+        "<td>" + row.quantity + "</td>" +
+        "</tr>";
+    });
+
+    result.innerHTML =
+      "<div class='result'>" +
+      "<h2>" + data[0].Itemcode + "</h2>" +
+      "<p><b>" + data[0].ItemName + "</b></p>" +
+      "<div class='total'>TOTAL STOCK: " + total + "</div>" +
+      "<table>" +
+      "<tr><th>Branch</th><th>Stock</th></tr>" +
+      rows +
+      "</table>" +
+      "</div>";
+
+  } catch (error) {
+
+    result.innerHTML =
+      "<div class='result'>" +
+      "<h2>Error</h2>" +
+      "<p>" + error.message + "</p>" +
+      "</div>";
+
+  }
+
 }
 
 </script>
-
-</body>
 </html>
