@@ -36,6 +36,7 @@
       margin-top: 20px;
       padding: 15px;
       background: #f3f3f3;
+      white-space: pre-line;
     }
   </style>
 </head>
@@ -90,57 +91,9 @@ async function uploadExcel() {
       defval: null
     });
 
-   const stockMap = new Map();
+    const stockMap = new Map();
 
-for (const row of rows) {
-
-  const itemcode = row["Itemcode"];
-  const itemName = row["ItemName"];
-  const branch = row["Branch"];
-  const quantity = row["Closing Balance"];
-  const dnp = row["DNP"];
-
-  if (
-    itemcode === null ||
-    itemcode === undefined ||
-    branch === null ||
-    branch === undefined ||
-    String(itemcode).trim() === "" ||
-    String(branch).trim() === ""
-  ) {
-    continue;
-  }
-
-  const cleanItemcode = String(itemcode).trim();
-  const cleanBranch = String(branch).trim();
-
-  const key = cleanItemcode + "|" + cleanBranch;
-
-  const qty = Number(quantity) || 0;
-  const price = Number(dnp) || 0;
-
-  if (stockMap.has(key)) {
-
-    const existing = stockMap.get(key);
-
-    existing.quantity += qty;
-
-  } else {
-
-    stockMap.set(key, {
-      Itemcode: cleanItemcode,
-      ItemName: itemName ? String(itemName).trim() : "",
-      Branch: cleanBranch,
-      quantity: qty,
-      DNP: price
-    });
-
-  }
-}
-
-const cleaned = Array.from(stockMap.values());
-
-   const cleaned = []; {
+    for (const row of rows) {
 
       const itemcode = row["Itemcode"];
       const itemName = row["ItemName"];
@@ -159,14 +112,34 @@ const cleaned = Array.from(stockMap.values());
         continue;
       }
 
-      cleaned.push({
-        Itemcode: String(itemcode).trim(),
-        ItemName: itemName ? String(itemName).trim() : "",
-        Branch: String(branch).trim(),
-        quantity: Number(quantity) || 0,
-        DNP: Number(dnp) || 0
-      });
+      const cleanItemcode = String(itemcode).trim();
+      const cleanBranch = String(branch).trim();
+
+      const key = cleanItemcode + "|" + cleanBranch;
+
+      const qty = Number(quantity) || 0;
+      const price = Number(dnp) || 0;
+
+      if (stockMap.has(key)) {
+
+        const existing = stockMap.get(key);
+
+        existing.quantity += qty;
+
+      } else {
+
+        stockMap.set(key, {
+          Itemcode: cleanItemcode,
+          ItemName: itemName ? String(itemName).trim() : "",
+          Branch: cleanBranch,
+          quantity: qty,
+          DNP: price
+        });
+
+      }
     }
+
+    const cleaned = Array.from(stockMap.values());
 
     status.innerText =
       "Processed " + cleaned.length + " stock records. Uploading...";
