@@ -90,11 +90,57 @@ async function uploadExcel() {
       defval: null
     });
 
-    status.innerText = "Excel loaded. Processing " + rows.length + " rows...";
+   const stockMap = new Map();
 
-    const cleaned = [];
+for (const row of rows) {
 
-    for (const row of rows) {
+  const itemcode = row["Itemcode"];
+  const itemName = row["ItemName"];
+  const branch = row["Branch"];
+  const quantity = row["Closing Balance"];
+  const dnp = row["DNP"];
+
+  if (
+    itemcode === null ||
+    itemcode === undefined ||
+    branch === null ||
+    branch === undefined ||
+    String(itemcode).trim() === "" ||
+    String(branch).trim() === ""
+  ) {
+    continue;
+  }
+
+  const cleanItemcode = String(itemcode).trim();
+  const cleanBranch = String(branch).trim();
+
+  const key = cleanItemcode + "|" + cleanBranch;
+
+  const qty = Number(quantity) || 0;
+  const price = Number(dnp) || 0;
+
+  if (stockMap.has(key)) {
+
+    const existing = stockMap.get(key);
+
+    existing.quantity += qty;
+
+  } else {
+
+    stockMap.set(key, {
+      Itemcode: cleanItemcode,
+      ItemName: itemName ? String(itemName).trim() : "",
+      Branch: cleanBranch,
+      quantity: qty,
+      DNP: price
+    });
+
+  }
+}
+
+const cleaned = Array.from(stockMap.values());
+
+   const cleaned = []; {
 
       const itemcode = row["Itemcode"];
       const itemName = row["ItemName"];
