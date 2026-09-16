@@ -56,12 +56,15 @@
       cursor: pointer;
     }
 
-    .total {
-      font-size: 20px;
-      font-weight: bold;
-      margin: 20px 0;
-    }
-
+   .total {
+  font-size: 20px;
+  font-weight: bold;
+  margin: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
     table {
       width: 100%;
       border-collapse: collapse;
@@ -136,7 +139,7 @@
           SUPABASE_URL +
         "/rest/v1/branch_stock?Itemcode=ilike." +
 encodeURIComponent(part) +
-          "&select=Itemcode,ItemName,Branch,quantity";
+          "&select=Itemcode,ItemName,Branch,quantity,MRP";
 
         const response = await fetch(url, {
           headers: {
@@ -192,9 +195,9 @@ encodeURIComponent(part) +
           "</b></p>" +
 
           "<div class='total'>" +
-          "TOTAL STOCK: " +
-          total +
-          "</div>" +
+"<span>TOTAL STOCK: " + total + "</span>" +
+"<span>MRP: ₹" + Number(data[0].MRP || 0).toLocaleString("en-IN") + "</span>" +
+"</div>" +
 
           "<table>" +
 
