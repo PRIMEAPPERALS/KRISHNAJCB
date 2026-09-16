@@ -99,7 +99,7 @@ async function uploadExcel() {
       const itemName = row["ItemName"];
       const branch = row["Branch"];
       const quantity = row["Closing Balance"];
-      const dnp = row["DNP"];
+      const mrp = row["MRP"];
 
       if (
         itemcode === null ||
@@ -118,7 +118,7 @@ async function uploadExcel() {
       const key = cleanItemcode + "|" + cleanBranch;
 
       const qty = Number(quantity) || 0;
-      const price = Number(dnp) || 0;
+           const mrpValue = Number(mrp) || 0;
 
       if (stockMap.has(key)) {
 
@@ -133,7 +133,7 @@ async function uploadExcel() {
           ItemName: itemName ? String(itemName).trim() : "",
           Branch: cleanBranch,
           quantity: qty,
-          DNP: price
+          MRP: mrpValue
         });
 
       }
