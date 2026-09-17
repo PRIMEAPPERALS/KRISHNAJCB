@@ -160,9 +160,10 @@ encodeURIComponent(part) +
     "Authorization": "Bearer " + SUPABASE_KEY,
     "Content-Type": "application/json"
   },
-  body: JSON.stringify({
-    part_number: part
-  })
+body: JSON.stringify({
+  part_number: part,
+  search_status: data.length === 0 ? "NOT FOUND" : "FOUND"
+})
 });
 
         if (data.length === 0) {
