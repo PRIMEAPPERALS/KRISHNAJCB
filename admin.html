@@ -100,7 +100,8 @@ async function uploadExcel() {
       const branch = row["Branch"];
       const quantity = row["Closing Balance"];
       const mrp = row["MRP"];
-
+      const location = row["Location"];
+      
       if (
         itemcode === null ||
         itemcode === undefined ||
@@ -134,6 +135,7 @@ async function uploadExcel() {
           Branch: cleanBranch,
           quantity: qty,
           MRP: mrpValue
+          Location: location
         });
 
       }
