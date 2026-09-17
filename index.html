@@ -139,7 +139,7 @@
           SUPABASE_URL +
         "/rest/v1/branch_stock?Itemcode=ilike." +
 encodeURIComponent(part) +
-          "&select=Itemcode,ItemName,Branch,quantity,MRP";
+          "&select=Itemcode,ItemName,Branch,quantity,MRP,Location";
 
         const response = await fetch(url, {
           headers: {
@@ -181,6 +181,7 @@ encodeURIComponent(part) +
             "<tr>" +
             "<td>" + row.Branch + "</td>" +
             "<td>" + row.quantity + "</td>" +
+            "<td>" + (row.Location || "") + "</td>" +
             "</tr>";
 
         });
@@ -204,6 +205,7 @@ encodeURIComponent(part) +
           "<tr>" +
           "<th>Branch</th>" +
           "<th>Stock</th>" +
+          "<th>Location</th>" +
           "</tr>" +
 
           rows +
