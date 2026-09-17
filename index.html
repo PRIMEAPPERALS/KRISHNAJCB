@@ -118,129 +118,206 @@
 
     async function searchPart() {
 
-      const part = document
-        .getElementById("partNumber")
-        .value
-        .trim();
+  const part = document
+    .getElementById("partNumber")
+    .value
+    .trim();
 
-      const result = document.getElementById("result");
+  const result = document.getElementById("result");
 
-      if (!part) {
-        alert("Please enter a part number");
-        return;
+  if (!part) {
+    alert("Please enter a part number");
+    return;
+  }
+
+  result.innerHTML =
+    "<div class='result'>Searching...</div>";
+
+  try {
+
+    // STEP 1: Check whether the part exists in Price Master
+    const masterUrl =
+      SUPABASE_URL +
+      "/rest/v1/part_master?Itemcode=ilike." +
+      encodeURIComponent(part) +
+      "&select=Itemcode,ItemName,MRP";
+
+    const masterResponse = await fetch(masterUrl, {
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY
       }
+    });
 
-      result.innerHTML =
-        "<div class='result'>Searching...</div>";
-
-      try {
-
-        const url =
-          SUPABASE_URL +
-        "/rest/v1/branch_stock?Itemcode=ilike." +
-encodeURIComponent(part) +
-          "&select=Itemcode,ItemName,Branch,quantity,MRP,Location";
-
-        const response = await fetch(url, {
-          headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": "Bearer " + SUPABASE_KEY
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-
-        const data = await response.json();
-        await fetch(SUPABASE_URL + "/rest/v1/search_history", {
-  method: "POST",
-  headers: {
-    "apikey": SUPABASE_KEY,
-    "Authorization": "Bearer " + SUPABASE_KEY,
-    "Content-Type": "application/json"
-  },
-body: JSON.stringify({
-  part_number: part,
-  search_status: data.length === 0 ? "NOT FOUND" : "FOUND"
-})
-});
-
-        if (data.length === 0) {
-
-          result.innerHTML =
-            "<div class='result'>" +
-            "<h2>Part Not Found</h2>" +
-            "<p>No stock found for <b>" +
-            part +
-            "</b></p>" +
-            "</div>";
-
-          return;
-        }
-
-        let total = 0;
-
-        data.forEach(row => {
-          total += Number(row.quantity) || 0;
-        });
-
-        let rows = "";
-
-        data.forEach(row => {
-
-          rows +=
-            "<tr>" +
-            "<td>" + row.Branch + "</td>" +
-            "<td>" + row.quantity + "</td>" +
-            "<td>" + (row.Location || "") + "</td>" +
-            "</tr>";
-
-        });
-
-        result.innerHTML =
-          "<div class='result'>" +
-
-          "<h2>" + data[0].Itemcode + "</h2>" +
-
-          "<p><b>" +
-          data[0].ItemName +
-          "</b></p>" +
-
-          "<div class='total'>" +
-"<span>TOTAL STOCK: " + total + "</span>" +
-"<span>MRP: ₹" + Number(data[0].MRP || 0).toLocaleString("en-IN") + "</span>" +
-"</div>" +
-
-          "<table>" +
-
-          "<tr>" +
-          "<th>Branch</th>" +
-          "<th>Stock</th>" +
-          "<th>Location</th>" +
-          "</tr>" +
-
-          rows +
-
-          "</table>" +
-
-          "</div>";
-
-      } catch (error) {
-
-        result.innerHTML =
-          "<div class='result error'>" +
-          "<h2>Error</h2>" +
-          "<p>" +
-          error.message +
-          "</p>" +
-          "</div>";
-
-      }
-
+    if (!masterResponse.ok) {
+      throw new Error(await masterResponse.text());
     }
 
-  </script>
+    const masterData = await masterResponse.json();
+
+    // PART NUMBER DOES NOT EXIST
+    if (masterData.length === 0) {
+
+      await fetch(SUPABASE_URL + "/rest/v1/search_history", {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + SUPABASE_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          part_number: part,
+          search_status: "INCORRECT PART NO"
+        })
+      });
+
+      result.innerHTML =
+        "<div class='result'>" +
+        "<h2>Incorrect Part No</h2>" +
+        "<p><b>" + part + "</b> is not available in the Price Master.</p>" +
+        "</div>";
+
+      return;
+    }
+
+    // Use the exact master record
+    const masterPart = masterData[0];
+
+    // STEP 2: Find stock for this valid part
+    const stockUrl =
+      SUPABASE_URL +
+      "/rest/v1/branch_stock?Itemcode=ilike." +
+      encodeURIComponent(masterPart.Itemcode) +
+      "&select=Itemcode,ItemName,Branch,quantity,Location";
+
+    const stockResponse = await fetch(stockUrl, {
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY
+      }
+    });
+
+    if (!stockResponse.ok) {
+      throw new Error(await stockResponse.text());
+    }
+
+    const data = await stockResponse.json();
+
+    let total = 0;
+
+    data.forEach(row => {
+      total += Number(row.quantity) || 0;
+    });
+
+    // VALID PART BUT NO STOCK
+    if (total <= 0) {
+
+      await fetch(SUPABASE_URL + "/rest/v1/search_history", {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + SUPABASE_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          part_number: part,
+          search_status: "NO STOCK"
+        })
+      });
+
+      result.innerHTML =
+        "<div class='result'>" +
+
+        "<h2>" + masterPart.Itemcode + "</h2>" +
+
+        "<p><b>" +
+        masterPart.ItemName +
+        "</b></p>" +
+
+        "<div class='total'>" +
+        "<span>TOTAL STOCK: 0</span>" +
+        "<span>MRP: ₹" +
+        Number(masterPart.MRP || 0).toLocaleString("en-IN") +
+        "</span>" +
+        "</div>" +
+
+        "<p><b>NO STOCK AVAILABLE IN ANY BRANCH</b></p>" +
+
+        "</div>";
+
+      return;
+    }
+
+    // STOCK AVAILABLE
+    await fetch(SUPABASE_URL + "/rest/v1/search_history", {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        part_number: part,
+        search_status: "FOUND"
+      })
+    });
+
+    let rows = "";
+
+    data.forEach(row => {
+
+      rows +=
+        "<tr>" +
+        "<td>" + row.Branch + "</td>" +
+        "<td>" + row.quantity + "</td>" +
+        "<td>" + (row.Location || "") + "</td>" +
+        "</tr>";
+
+    });
+
+    result.innerHTML =
+      "<div class='result'>" +
+
+      "<h2>" + masterPart.Itemcode + "</h2>" +
+
+      "<p><b>" +
+      masterPart.ItemName +
+      "</b></p>" +
+
+      "<div class='total'>" +
+      "<span>TOTAL STOCK: " + total + "</span>" +
+      "<span>MRP: ₹" +
+      Number(masterPart.MRP || 0).toLocaleString("en-IN") +
+      "</span>" +
+      "</div>" +
+
+      "<table>" +
+
+      "<tr>" +
+      "<th>Branch</th>" +
+      "<th>Stock</th>" +
+      "<th>Location</th>" +
+      "</tr>" +
+
+      rows +
+
+      "</table>" +
+
+      "</div>";
+
+  } catch (error) {
+
+    result.innerHTML =
+      "<div class='result error'>" +
+      "<h2>Error</h2>" +
+      "<p>" +
+      error.message +
+      "</p>" +
+      "</div>";
+
+  }
+
+}  </script>
 
 </body>
 </html>
