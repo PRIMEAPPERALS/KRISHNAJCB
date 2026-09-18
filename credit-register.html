@@ -134,7 +134,10 @@ async function validateInvite() {
   }
 
   if (!data || data.length === 0 || data[0].valid !== true) {
-    showMessage("This registration link is invalid, expired, already used, or the branch is inactive.", "error");
+    showMessage(
+      "This registration link is invalid, expired, already used, or the branch is inactive.",
+      "error"
+    );
     return false;
   }
 
@@ -156,6 +159,11 @@ form.addEventListener("submit", async (event) => {
   const password = document.getElementById("password").value;
   const confirmPassword = document.getElementById("confirmPassword").value;
 
+  if (!employeeName) {
+    showMessage("Employee name is required.", "error");
+    return;
+  }
+
   if (password !== confirmPassword) {
     showMessage("Passwords do not match.", "error");
     return;
@@ -170,9 +178,23 @@ form.addEventListener("submit", async (event) => {
   showMessage("Creating your account...", "info");
 
   try {
+    /*
+      The invitation token and employee name are placed in Auth metadata.
+      The database trigger reads this metadata and creates the
+      BRANCH_USER profile with the branch taken from the invitation.
+      The password is handled only by Supabase Auth.
+    */
     const { data, error } = await supabaseClient.auth.signUp({
       email,
-      password
+      password,
+      options: {
+        data: {
+          credit_portal: "true",
+          invite_token: token,
+          employee_name: employeeName
+        },
+        emailRedirectTo: window.location.origin + "/credit-login.html"
+      }
     });
 
     if (error) throw error;
@@ -181,20 +203,9 @@ form.addEventListener("submit", async (event) => {
       throw new Error("Account could not be created.");
     }
 
-    // If Supabase returns a session immediately, create the credit profile now.
     if (data.session) {
-      const { error: profileError } = await supabaseClient.rpc(
-        "credit_register_branch_user",
-        {
-          p_invite_token: token,
-          p_employee_name: employeeName
-        }
-      );
-
-      if (profileError) throw profileError;
-
       showMessage(
-        "Account created successfully. Your branch is " +
+        "Account created successfully for " +
         branchName.textContent +
         ". Redirecting to login...",
         "success"
@@ -209,13 +220,8 @@ form.addEventListener("submit", async (event) => {
       return;
     }
 
-    // Email confirmation is enabled in Supabase.
-    // Profile creation will be completed after the user signs in.
-    sessionStorage.setItem("credit_registration_token", token);
-    sessionStorage.setItem("credit_registration_name", employeeName);
-
     showMessage(
-      "Account created. Please confirm your email, then sign in through the Credit Portal. Your branch invitation is reserved for this registration.",
+      "Account created successfully. Please confirm your email, then sign in through the Credit Portal.",
       "success"
     );
 
