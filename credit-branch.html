@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Krishna Credit Portal - Branch</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#f4f5f7;padding:20px}
+.card{max-width:700px;margin:30px auto;background:#fff;padding:24px;border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.1)}
+h1{margin-top:0}.info{background:#f1f5f9;padding:16px;border-radius:10px;margin:16px 0}
+button{padding:12px 18px;border:0;border-radius:8px;background:#222;color:#fff;cursor:pointer}
+#error{color:#b00020}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>Krishna Credit Portal</h1>
+<p>Branch User Dashboard</p>
+<div id="profile" class="info">Loading...</div>
+<button id="logout">LOGOUT</button>
+<div id="error"></div>
+</div>
+<script>
+const SUPABASE_URL="https://vqcsxozodlduvzwqumoz.supabase.co";
+const SUPABASE_KEY="sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+async function load(){
+ const {data:{user}}=await supabaseClient.auth.getUser();
+ if(!user){location.href="credit-login.html";return;}
+ const {data:p,error}=await supabaseClient.from("credit_users")
+   .select("id,employee_name,email,role,branch_id,is_active").eq("id",user.id).maybeSingle();
+ if(error||!p||!p.is_active||p.role!=="BRANCH_USER"){
+   await supabaseClient.auth.signOut();
+   document.getElementById("error").textContent="Access denied. Please contact the COO.";
+   return;
+ }
+ let branchName="Branch";
+ if(p.branch_id){
+   const {data:b}=await supabaseClient.from("credit_branches")
+     .select("branch_name,branch_code").eq("id",p.branch_id).maybeSingle();
+   if(b) branchName=b.branch_name+" ("+b.branch_code+")";
+ }
+ document.getElementById("profile").innerHTML="<strong>Welcome, "+p.employee_name+"</strong><br>"+branchName+"<br>"+p.email;
+}
+document.getElementById("logout").onclick=async()=>{await supabaseClient.auth.signOut();location.href="credit-login.html";};
+load();
+</script>
+</body>
+</html>
