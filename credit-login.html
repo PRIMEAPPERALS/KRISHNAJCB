@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Krishna Credit Portal - Login</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f5f7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 4px 18px rgba(0,0,0,.10);
+    }
+    h1 { margin: 0 0 6px; text-align: center; }
+    .subtitle { text-align: center; color: #666; margin: 0 0 24px; }
+    label { display: block; font-weight: 600; margin: 14px 0 7px; }
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #ccc;
+      border-radius: 9px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      border: 0;
+      border-radius: 9px;
+      background: #222;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .6; cursor: wait; }
+    #message {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 9px;
+      display: none;
+      white-space: pre-line;
+    }
+    .error { display: block !important; background: #fff0f0; color: #b00020; }
+    .info { display: block !important; background: #f1f5f9; color: #334155; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Krishna Credit Portal</h1>
+    <p class="subtitle">Secure Login</p>
+
+    <form id="loginForm">
+      <label for="email">Email ID</label>
+      <input id="email" type="email" autocomplete="username" required>
+
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+
+      <button id="loginButton" type="submit">LOGIN</button>
+    </form>
+
+    <div id="message"></div>
+  </div>
+
+<script>
+const SUPABASE_URL = "https://vqcsxozodlduvzwqumoz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const form = document.getElementById("loginForm");
+const button = document.getElementById("loginButton");
+const message = document.getElementById("message");
+
+function showMessage(text, type) {
+  message.textContent = text;
+  message.className = type;
+}
+
+async function routeUser() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  if (!user) return;
+
+  const { data: profile, error } = await supabaseClient
+    .from("credit_users")
+    .select("id, employee_name, email, role, branch_id, is_active")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    await supabaseClient.auth.signOut();
+    showMessage("Unable to load your user profile. Please contact the COO.", "error");
+    return;
+  }
+
+  if (!profile) {
+    await supabaseClient.auth.signOut();
+    showMessage("Your account is not registered in the Credit Portal. Please contact the COO.", "error");
+    return;
+  }
+
+  if (!profile.is_active) {
+    await supabaseClient.auth.signOut();
+    showMessage("Your account is blocked. Please contact the COO.", "error");
+    return;
+  }
+
+  if (profile.role === "BRANCH_USER") {
+    window.location.href = "credit-branch.html";
+    return;
+  }
+
+  if (profile.role === "ADMIN") {
+    window.location.href = "credit-admin.html";
+    return;
+  }
+
+  if (profile.role === "COO") {
+    window.location.href = "credit-coo.html";
+    return;
+  }
+
+  await supabaseClient.auth.signOut();
+  showMessage("Invalid user role. Please contact the COO.", "error");
+}
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const email = document.getElementById("email").value.trim().toLowerCase();
+  const password = document.getElementById("password").value;
+
+  button.disabled = true;
+  showMessage("Signing in...", "info");
+
+  try {
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) throw error;
+
+    await routeUser();
+  } catch (error) {
+    showMessage("Login failed: " + error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+});
+
+routeUser();
+</script>
+</body>
+</html>
