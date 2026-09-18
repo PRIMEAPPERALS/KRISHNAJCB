@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Krishna Credit Portal - Branch Registration</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f5f7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      width: 100%;
+      max-width: 440px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 4px 18px rgba(0,0,0,.10);
+    }
+    h1 { margin: 0 0 6px; text-align: center; }
+    .subtitle { text-align: center; color: #666; margin: 0 0 22px; }
+    .branch {
+      padding: 14px;
+      background: #f1f5f9;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .branch strong { display: block; font-size: 18px; margin-top: 4px; }
+    label { display: block; font-weight: 600; margin: 14px 0 7px; }
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #ccc;
+      border-radius: 9px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      border: 0;
+      border-radius: 9px;
+      background: #222;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .6; cursor: wait; }
+    #message {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 9px;
+      display: none;
+      white-space: pre-line;
+    }
+    .error { display: block !important; background: #fff0f0; color: #b00020; }
+    .info { display: block !important; background: #f1f5f9; color: #334155; }
+    .success { display: block !important; background: #effaf0; color: #176b2c; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Branch Registration</h1>
+    <p class="subtitle">Krishna Credit Portal</p>
+
+    <div id="branchBox" class="branch hidden">
+      Assigned Branch
+      <strong id="branchName"></strong>
+      <span id="branchCode"></span>
+    </div>
+
+    <form id="registerForm" class="hidden">
+      <label for="employeeName">Employee Name</label>
+      <input id="employeeName" type="text" autocomplete="name" required>
+
+      <label for="email">Email ID</label>
+      <input id="email" type="email" autocomplete="email" required>
+
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="new-password" minlength="8" required>
+
+      <label for="confirmPassword">Confirm Password</label>
+      <input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+
+      <button id="registerButton" type="submit">CREATE ACCOUNT</button>
+    </form>
+
+    <div id="message"></div>
+  </div>
+
+<script>
+const SUPABASE_URL = "https://vqcsxozodlduvzwqumoz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const token = new URLSearchParams(window.location.search).get("invite");
+const form = document.getElementById("registerForm");
+const branchBox = document.getElementById("branchBox");
+const branchName = document.getElementById("branchName");
+const branchCode = document.getElementById("branchCode");
+const button = document.getElementById("registerButton");
+const message = document.getElementById("message");
+
+function showMessage(text, type) {
+  message.textContent = text;
+  message.className = type;
+}
+
+async function validateInvite() {
+  if (!token) {
+    showMessage("Invalid registration link. Invitation token is missing.", "error");
+    return false;
+  }
+
+  const { data, error } = await supabaseClient.rpc(
+    "credit_validate_branch_invite",
+    { p_invite_token: token }
+  );
+
+  if (error) {
+    showMessage("Unable to validate invitation: " + error.message, "error");
+    return false;
+  }
+
+  if (!data || data.length === 0 || data[0].valid !== true) {
+    showMessage("This registration link is invalid, expired, already used, or the branch is inactive.", "error");
+    return false;
+  }
+
+  const invite = data[0];
+
+  branchName.textContent = invite.branch_name;
+  branchCode.textContent = invite.branch_code;
+  branchBox.classList.remove("hidden");
+  form.classList.remove("hidden");
+
+  return true;
+}
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const employeeName = document.getElementById("employeeName").value.trim();
+  const email = document.getElementById("email").value.trim().toLowerCase();
+  const password = document.getElementById("password").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+
+  if (password !== confirmPassword) {
+    showMessage("Passwords do not match.", "error");
+    return;
+  }
+
+  if (password.length < 8) {
+    showMessage("Password must be at least 8 characters.", "error");
+    return;
+  }
+
+  button.disabled = true;
+  showMessage("Creating your account...", "info");
+
+  try {
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password
+    });
+
+    if (error) throw error;
+
+    if (!data.user) {
+      throw new Error("Account could not be created.");
+    }
+
+    // If Supabase returns a session immediately, create the credit profile now.
+    if (data.session) {
+      const { error: profileError } = await supabaseClient.rpc(
+        "credit_register_branch_user",
+        {
+          p_invite_token: token,
+          p_employee_name: employeeName
+        }
+      );
+
+      if (profileError) throw profileError;
+
+      showMessage(
+        "Account created successfully. Your branch is " +
+        branchName.textContent +
+        ". Redirecting to login...",
+        "success"
+      );
+
+      await supabaseClient.auth.signOut();
+
+      setTimeout(() => {
+        window.location.href = "credit-login.html";
+      }, 1500);
+
+      return;
+    }
+
+    // Email confirmation is enabled in Supabase.
+    // Profile creation will be completed after the user signs in.
+    sessionStorage.setItem("credit_registration_token", token);
+    sessionStorage.setItem("credit_registration_name", employeeName);
+
+    showMessage(
+      "Account created. Please confirm your email, then sign in through the Credit Portal. Your branch invitation is reserved for this registration.",
+      "success"
+    );
+
+  } catch (error) {
+    showMessage("Registration failed: " + error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+});
+
+validateInvite();
+</script>
+</body>
+</html>
