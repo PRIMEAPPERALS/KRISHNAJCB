@@ -1,71 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Krishna Credit Portal - Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--navy:#14243a;--blue:#2563eb;--bg:#f4f7fb;--text:#172033;--muted:#687386;--line:#e5e9f0;--white:#fff;--green:#059669;--amber:#d97706;--red:#dc2626}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}
-header{height:72px;background:var(--navy);color:#fff;display:flex;align-items:center;padding:0 28px;justify-content:space-between}
-.brand{font-size:20px;font-weight:800;letter-spacing:.4px}.brand small{display:block;font-size:11px;font-weight:400;opacity:.7;margin-top:2px}.admin{display:flex;align-items:center;gap:12px}.avatar{width:38px;height:38px;border-radius:50%;background:#fff;color:var(--navy);display:grid;place-items:center;font-weight:800}.admin span{font-size:13px}
-.layout{display:flex;min-height:calc(100vh - 72px)}aside{width:235px;background:#17283f;color:#fff;padding:22px 14px}.nav{padding:13px 14px;border-radius:9px;margin-bottom:5px;color:#dbe4f0;font-size:14px}.nav.active{background:#2563eb;color:#fff;font-weight:700}.nav b{float:right;background:#ef4444;border-radius:12px;padding:2px 7px;font-size:11px}
-main{flex:1;padding:28px;max-width:1400px;margin:auto;width:100%}.title{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.title h1{margin:0;font-size:27px}.title p{margin:6px 0 0;color:var(--muted);font-size:14px}
+:root{--navy:#14243a;--blue:#2563eb;--bg:#f4f7fb;--text:#172033;--muted:#687386;--line:#e5e9f0;--green:#059669;--amber:#d97706;--red:#dc2626}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+header{height:72px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 28px}.brand{font-size:20px;font-weight:800}.brand small{display:block;font-size:11px;opacity:.7;margin-top:3px}.admin{display:flex;align-items:center;gap:10px;font-size:13px}.avatar{width:38px;height:38px;border-radius:50%;background:#fff;color:var(--navy);display:grid;place-items:center;font-weight:800}
+.layout{display:flex;min-height:calc(100vh - 72px)}aside{width:235px;background:#17283f;color:#fff;padding:22px 14px}.nav{padding:13px 14px;border-radius:9px;margin-bottom:5px;color:#dbe4f0;font-size:14px}.nav.active{background:var(--blue);color:#fff;font-weight:700}.nav b{float:right;background:#ef4444;border-radius:12px;padding:2px 7px;font-size:11px}.logout{margin-top:25px;cursor:pointer}
+main{flex:1;padding:28px;max-width:1450px;margin:auto;width:100%}.title{margin-bottom:20px}.title h1{margin:0;font-size:27px}.title p{margin:6px 0;color:var(--muted);font-size:14px}
 .filters{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;gap:10px;margin-bottom:18px}.filters select,.filters input{padding:11px;border:1px solid #d8dee8;border-radius:8px;background:#fff;font-size:14px}.filters select{min-width:170px}.apply{background:var(--blue);color:#fff;border:0;border-radius:8px;padding:11px 18px;font-weight:700}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}.kpi{background:#fff;border:1px solid var(--line);border-radius:13px;padding:18px}.kpi .label{font-size:13px;color:var(--muted)}.kpi .num{font-size:29px;font-weight:800;margin-top:8px}.pending{border-left:4px solid var(--amber)}.approved{border-left:4px solid var(--green)}.rejected{border-left:4px solid var(--red)}
-.panel{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px;margin-bottom:18px}.panel h2{font-size:18px;margin:0 0 15px}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{text-align:left;padding:13px 10px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-size:12px;background:#fafbfc}.status{display:inline-block;padding:5px 9px;border-radius:20px;font-size:11px;font-weight:700}.SUBMITTED{background:#fff7ed;color:#b45309}.HOLD{background:#fef3c7;color:#92400e}.APPROVED{background:#ecfdf5;color:#047857}.REJECTED{background:#fef2f2;color:#b91c1c}.CLOSED{background:#eef2ff;color:#3730a3}.DRAFT{background:#f3f4f6;color:#4b5563}
-.view{background:#fff;border:1px solid #cbd5e1;border-radius:7px;padding:7px 11px;cursor:pointer;font-weight:700;color:#1d4ed8}.empty{text-align:center;color:var(--muted);padding:35px}.error{display:none;background:#fee2e2;color:#991b1b;padding:12px;border-radius:9px;margin-bottom:15px}
-.modal{display:none;position:fixed;inset:0;background:#0007;align-items:center;justify-content:center;padding:18px;z-index:10}.modalbox{background:#fff;border-radius:15px;width:100%;max-width:650px;max-height:90vh;overflow:auto;padding:24px}.modalhead{display:flex;justify-content:space-between}.close{border:0;background:#eee;border-radius:8px;padding:8px 12px}.details{background:#f8fafc;border-radius:10px;padding:14px;margin:14px 0}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{margin-top:12px}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px}.field input,.field textarea{width:100%;padding:10px;border:1px solid #d8dee8;border-radius:8px}.actions{display:flex;gap:9px;margin-top:18px}.actions button{flex:1;padding:12px;border:0;border-radius:8px;font-weight:700;cursor:pointer}.approve{background:#059669;color:#fff}.hold{background:#d97706;color:#fff}.reject{background:#dc2626;color:#fff}
-@media(max-width:850px){aside{display:none}.kpis{grid-template-columns:1fr 1fr}.filters{flex-wrap:wrap}.filters>*{flex:1;min-width:130px}main{padding:18px}}@media(max-width:520px){.kpis{grid-template-columns:1fr}.title h1{font-size:23px}.admin span{display:none}}
-</style>
-</head>
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.kpi{background:#fff;border:1px solid var(--line);border-radius:13px;padding:18px}.kpi .label{font-size:13px;color:var(--muted)}.kpi .num{font-size:26px;font-weight:800;margin-top:8px}.credit{border-left:4px solid var(--blue)}.received{border-left:4px solid var(--green)}.pending{border-left:4px solid var(--amber)}.month{border-left:4px solid #7c3aed}
+.analytics{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}.panel{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px}.panel h2{margin:0 0 16px;font-size:18px}.chart{height:260px;display:flex;align-items:flex-end;gap:8px;padding:15px 5px 30px;border-bottom:1px solid #cfd6df;position:relative}.bargrp{flex:1;height:100%;display:flex;align-items:flex-end;justify-content:center;gap:3px;min-width:24px}.bar{width:45%;min-height:2px;border-radius:4px 4px 0 0}.creditbar{background:#2563eb}.recvbar{background:#059669}.xlabel{position:absolute;bottom:0;font-size:10px;color:var(--muted);transform:translateX(-50%);white-space:nowrap}.legend{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-top:12px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}.dot.blue{background:#2563eb}.dot.green{background:#059669}
+.branchgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}.branchrow{margin:14px 0}.branchhead{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}.track{height:9px;background:#edf0f4;border-radius:8px;overflow:hidden;display:flex}.track .c{background:#2563eb}.track .r{background:#059669}.branchvalues{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:820px}th,td{text-align:left;padding:12px 9px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-size:12px;background:#fafbfc}.status{display:inline-block;padding:5px 9px;border-radius:20px;font-size:11px;font-weight:700}.SUBMITTED{background:#fff7ed;color:#b45309}.HOLD{background:#fef3c7;color:#92400e}.APPROVED{background:#ecfdf5;color:#047857}.REJECTED{background:#fef2f2;color:#b91c1c}.CLOSED{background:#eef2ff;color:#3730a3}.DRAFT{background:#f3f4f6;color:#4b5563}.view{background:#fff;border:1px solid #cbd5e1;border-radius:7px;padding:7px 11px;cursor:pointer;font-weight:700;color:#1d4ed8}.empty{text-align:center;color:var(--muted);padding:30px}.error{display:none;background:#fee2e2;color:#991b1b;padding:12px;border-radius:9px;margin-bottom:15px}
+@media(max-width:1000px){aside{display:none}.analytics,.branchgrid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}@media(max-width:600px){main{padding:16px}.kpis{grid-template-columns:1fr}.filters{flex-wrap:wrap}.filters>*{flex:1;min-width:130px}}
+</style></head>
 <body>
 <header><div class="brand">KRISHNA AUTOMOBILES<small>CREDIT PORTAL • ADMIN</small></div><div class="admin"><div class="avatar">AN</div><span id="adminName">Admin</span></div></header>
-<div class="layout">
-<aside><div class="nav active">▦ &nbsp; Dashboard</div><div class="nav">▣ &nbsp; Credit Requests <b id="sidePending">0</b></div><div class="nav">◉ &nbsp; Customer Master</div><div class="nav">▤ &nbsp; Reports & Analytics</div><div class="nav">⚙ &nbsp; Settings</div><div class="nav" id="logout" style="margin-top:25px">↪ &nbsp; Logout</div></aside>
-<main>
-<div id="error" class="error"></div>
-<div class="title"><div><h1>Admin Dashboard</h1><p>Monitor, review and manage credit requests across branches.</p></div></div>
-<div class="filters"><select id="branch"><option value="">All Branches</option></select><select id="status"><option value="">All Status</option><option>SUBMITTED</option><option>HOLD</option><option>APPROVED</option><option>REJECTED</option><option>CLOSED</option></select><input id="customer" placeholder="Customer name"><button class="apply" onclick="loadRequests()">Apply</button></div>
-<section class="kpis"><div class="kpi"><div class="label">Total Requests</div><div class="num" id="total">0</div></div><div class="kpi pending"><div class="label">Pending Approval</div><div class="num" id="pending">0</div></div><div class="kpi approved"><div class="label">Approved</div><div class="num" id="approved">0</div></div><div class="kpi rejected"><div class="label">Rejected</div><div class="num" id="rejected">0</div></div></section>
-<section class="panel"><h2>Credit Requests</h2><div class="tablewrap"><table><thead><tr><th>Request No.</th><th>Date</th><th>Branch</th><th>Customer</th><th>Amount</th><th>Credit Days</th><th>Status</th><th>Action</th></tr></thead><tbody id="tbody"></tbody></table></div></section>
+<div class="layout"><aside><div class="nav active">▦ &nbsp; Dashboard</div><div class="nav">▣ &nbsp; Credit Requests <b id="sidePending">0</b></div><div class="nav">◉ &nbsp; Customer Master</div><div class="nav">▤ &nbsp; Reports & Analytics</div><div class="nav">⚙ &nbsp; Settings</div><div class="nav logout" id="logout">↪ &nbsp; Logout</div></aside>
+<main><div id="error" class="error"></div><div class="title"><h1>Admin Dashboard</h1><p>Credit issued, monthly movement, collections and branch-wise performance.</p></div>
+<div class="filters"><select id="branch"><option value="">All Branches</option></select><select id="status"><option value="">All Status</option><option>SUBMITTED</option><option>HOLD</option><option>APPROVED</option><option>REJECTED</option><option>CLOSED</option></select><input id="customer" placeholder="Customer name"><button class="apply" onclick="loadAll()">Apply</button></div>
+<section class="kpis">
+<div class="kpi credit"><div class="label">Total Credit Approved</div><div class="num" id="totalCredit">₹0</div></div>
+<div class="kpi received"><div class="label">Total Amount Received</div><div class="num" id="totalReceived">₹0</div></div>
+<div class="kpi pending"><div class="label">Credit Pending to Receive</div><div class="num" id="totalPending">₹0</div></div>
+<div class="kpi month"><div class="label">Current Month Credit</div><div class="num" id="monthCredit">₹0</div></div>
+</section>
+<div class="analytics">
+<section class="panel"><h2>Monthly Credit vs Received</h2><div id="monthlyChart" class="chart"></div><div class="legend"><span><i class="dot blue"></i>Credit approved</span><span><i class="dot green"></i>Amount received</span></div></section>
+<section class="panel"><h2>Monthly Summary</h2><div id="monthlyTable" class="tablewrap"></div></section>
+</div>
+<div class="branchgrid">
+<section class="panel"><h2>Branch-wise Credit vs Received</h2><div id="branchChart"></div></section>
+<section class="panel"><h2>Branch-wise Summary</h2><div id="branchTable" class="tablewrap"></div></section>
+</div>
+<section class="panel"><h2>Credit Requests</h2><div class="tablewrap"><table><thead><tr><th>Request No.</th><th>Date</th><th>Branch</th><th>Customer</th><th>Credit Approved</th><th>Credit Days</th><th>Status</th><th>Action</th></tr></thead><tbody id="tbody"></tbody></table></div></section>
 </main></div>
-<div class="modal" id="modal"><div class="modalbox"><div class="modalhead"><h2 style="margin:0">Review Credit Request</h2><button class="close" onclick="closeModal()">Close</button></div><div id="details" class="details"></div><div class="row"><div class="field"><label>Approved Amount</label><input id="approvedAmount" type="number" min="0"></div><div class="field"><label>Approved Credit Days</label><input id="approvedDays" type="number" min="0"></div></div><div class="field"><label>Remarks / Reason</label><textarea id="decisionText" rows="3" placeholder="Mandatory for Hold / Reject"></textarea></div><div class="actions"><button class="approve" onclick="decide('approve')">Approve</button><button class="hold" onclick="decide('hold')">Hold</button><button class="reject" onclick="decide('reject')">Reject</button></div></div></div>
 <script>
-const SUPABASE_URL="https://vqcsxozodlduvzwqumoz.supabase.co",SUPABASE_KEY="sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";
-const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);let profile=null,requests=[],current=null;
-const money=n=>"₹ "+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
-function err(t){const e=document.getElementById("error");e.textContent=t;e.style.display="block"}
-async function load(){
- const {data:{user}}=await supabaseClient.auth.getUser();if(!user){location.href="credit-login.html";return}
- const p=await supabaseClient.from("credit_users").select("id,employee_name,email,role,is_active").eq("id",user.id).maybeSingle();
- if(p.error||!p.data||!p.data.is_active||!["ADMIN","COO"].includes(p.data.role)){await supabaseClient.auth.signOut();location.href="credit-login.html";return}
- profile=p.data;document.getElementById("adminName").textContent=profile.employee_name;
- const b=await supabaseClient.from("credit_branches").select("id,branch_name").order("branch_name");if(!b.error)(b.data||[]).forEach(x=>{const o=document.createElement("option");o.value=x.id;o.textContent=x.branch_name;document.getElementById("branch").appendChild(o)});
- await loadRequests();
+const U="https://vqcsxozodlduvzwqumoz.supabase.co",K="sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";const s=window.supabase.createClient(U,K);
+let requests=[],branches={},invoices=[],receipts=[],currentFilter={};
+const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:0});
+function showError(t){const e=document.getElementById("error");e.textContent=t;e.style.display="block"}
+function ym(d){const x=new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")}
+function monthLabel(k){const [y,m]=k.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("en-IN",{month:"short",year:"2-digit"})}
+async function auth(){
+ const {data:{user}}=await s.auth.getUser();if(!user){location.href="credit-login.html";return false}
+ const p=await s.from("credit_users").select("employee_name,email,role,is_active").eq("id",user.id).maybeSingle();
+ if(p.error||!p.data||!p.data.is_active||!["ADMIN","COO"].includes(p.data.role)){await s.auth.signOut();location.href="credit-login.html";return false}
+ document.getElementById("adminName").textContent=p.data.employee_name;return true
 }
-async function loadRequests(){
- let q=supabaseClient.from("credit_requests").select("id,request_no,branch_id,customer_name,requested_amount,requested_credit_days,status,created_at,remarks").order("created_at",{ascending:false});
- const br=document.getElementById("branch").value,st=document.getElementById("status").value,cu=document.getElementById("customer").value.trim();
- if(br)q=q.eq("branch_id",br);if(st)q=q.eq("status",st);if(cu)q=q.ilike("customer_name","%"+cu+"%");
- const r=await q;if(r.error){err(r.error.message);return}requests=r.data||[];
- document.getElementById("total").textContent=requests.length;document.getElementById("pending").textContent=requests.filter(x=>x.status==="SUBMITTED"||x.status==="HOLD").length;document.getElementById("approved").textContent=requests.filter(x=>x.status==="APPROVED"||x.status==="CLOSED").length;document.getElementById("rejected").textContent=requests.filter(x=>x.status==="REJECTED").length;document.getElementById("sidePending").textContent=requests.filter(x=>x.status==="SUBMITTED"||x.status==="HOLD").length;
- const names={};const bs=await supabaseClient.from("credit_branches").select("id,branch_name");(bs.data||[]).forEach(x=>names[x.id]=x.branch_name);
- document.getElementById("tbody").innerHTML=requests.length?requests.map(x=>"<tr><td><strong>"+x.request_no+"</strong></td><td>"+new Date(x.created_at).toLocaleDateString("en-IN")+"</td><td>"+(names[x.branch_id]||"-")+"</td><td>"+x.customer_name+"</td><td>"+money(x.requested_amount)+"</td><td>"+x.requested_credit_days+"</td><td><span class='status "+x.status+"'>"+x.status+"</span></td><td><button class='view' onclick='openReview("+x.id+")'>View</button></td></tr>").join(""):"<tr><td colspan='8' class='empty'>No credit requests found.</td></tr>";
+async function loadBranches(){
+ const r=await s.from("credit_branches").select("id,branch_name,branch_code").order("branch_name");if(r.error)throw r.error;
+ (r.data||[]).forEach(b=>{branches[b.id]=b;const o=document.createElement("option");o.value=b.id;o.textContent=b.branch_name;document.getElementById("branch").appendChild(o)})
 }
-function openReview(id){current=requests.find(x=>x.id===id);if(!current)return;document.getElementById("details").innerHTML="<strong>"+current.request_no+"</strong><div style='margin-top:10px'>Customer: "+current.customer_name+"<br>Requested Amount: "+money(current.requested_amount)+"<br>Requested Credit Days: "+current.requested_credit_days+"<br>Status: "+current.status+"<br>Remarks: "+(current.remarks||"-")+"</div>";document.getElementById("approvedAmount").value=current.requested_amount;document.getElementById("approvedDays").value=current.requested_credit_days;document.getElementById("decisionText").value="";document.getElementById("modal").style.display="flex"}
-function closeModal(){document.getElementById("modal").style.display="none";current=null}
-async function decide(type){
- if(!current)return;
- const reason=document.getElementById("decisionText").value.trim(),amount=Number(document.getElementById("approvedAmount").value),days=Number(document.getElementById("approvedDays").value);
- let result;
- if(type==="approve"){if(!amount||amount<=0||amount>Number(current.requested_amount)){alert("Approved amount must be greater than 0 and not exceed requested amount.");return}result=await supabaseClient.rpc("credit_approve_request",{p_request_id:current.id,p_approved_amount:amount,p_approved_credit_days:days,p_remarks:reason||null})}
- if(type==="hold"){if(!reason){alert("Reason is mandatory for Hold.");return}result=await supabaseClient.rpc("credit_hold_request",{p_request_id:current.id,p_reason:reason})}
- if(type==="reject"){if(!reason){alert("Reason is mandatory for Reject.");return}result=await supabaseClient.rpc("credit_reject_request",{p_request_id:current.id,p_reason:reason})}
- if(result?.error){alert(result.error.message);return}closeModal();await loadRequests();
+async function loadAll(){
+ try{
+  const br=document.getElementById("branch").value,st=document.getElementById("status").value,cu=document.getElementById("customer").value.trim();
+  currentFilter={br,st,cu};
+  let q=s.from("credit_requests").select("id,request_no,branch_id,customer_name,requested_amount,approved_amount,requested_credit_days,approved_credit_days,status,created_at,decision_at,remarks").order("created_at",{ascending:false});
+  if(br)q=q.eq("branch_id",br);if(st)q=q.eq("status",st);if(cu)q=q.ilike("customer_name","%"+cu+"%");
+  const rr=await q;if(rr.error)throw rr.error;requests=rr.data||[];
+  const ids=requests.map(x=>x.id);
+  invoices=[];receipts=[];
+  if(ids.length){
+   const ir=await s.from("credit_invoices").select("id,request_id,invoice_amount,invoice_date").in("request_id",ids);if(ir.error)throw ir.error;invoices=ir.data||[];
+   const invIds=invoices.map(x=>x.id);
+   if(invIds.length){const rc=await s.from("credit_receipts").select("id,invoice_id,received_amount,receipt_date").in("invoice_id",invIds);if(rc.error)throw rc.error;receipts=rc.data||[]}
+  }
+  render();
+ }catch(e){showError("Dashboard data error: "+e.message)}
 }
-document.getElementById("logout").onclick=async()=>{await supabaseClient.auth.signOut();location.href="credit-login.html"};load();
-</script>
-</body>
-</html>
+function render(){
+ const approved=requests.reduce((a,x)=>a+Number(x.approved_amount||0),0);
+ const received=receipts.reduce((a,x)=>a+Number(x.received_amount||0),0);
+ document.getElementById("totalCredit").textContent=money(approved);document.getElementById("totalReceived").textContent=money(received);document.getElementById("totalPending").textContent=money(Math.max(approved-received,0));
+ const now=new Date(),mk=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+ const monthCredit=requests.filter(x=>x.status==="APPROVED"||x.status==="CLOSED").filter(x=>ym(x.decision_at||x.created_at)===mk).reduce((a,x)=>a+Number(x.approved_amount||0),0);
+ document.getElementById("monthCredit").textContent=money(monthCredit);
+ document.getElementById("sidePending").textContent=requests.filter(x=>x.status==="SUBMITTED"||x.status==="HOLD").length;
+ renderMonthly();renderBranches();renderRequests();
+}
+function renderMonthly(){
+ const keys=[];const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-11);for(let i=0;i<12;i++){keys.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));d.setMonth(d.getMonth()+1)}
+ const data=keys.map(k=>({k,credit:requests.filter(x=>x.status==="APPROVED"||x.status==="CLOSED").filter(x=>ym(x.decision_at||x.created_at)===k).reduce((a,x)=>a+Number(x.approved_amount||0),0),received:receipts.filter(x=>ym(x.receipt_date)===k).reduce((a,x)=>a+Number(x.received_amount||0),0)}));
+ const max=Math.max(1,...data.flatMap(x=>[x.credit,x.received]));document.getElementById("monthlyChart").innerHTML=data.map(x=>"<div class='bargrp' title='"+monthLabel(x.k)+" | Credit "+money(x.credit)+" | Received "+money(x.received)+"'><div class='bar creditbar' style='height:"+Math.max(2,x.credit/max*205)+"px'></div><div class='bar recvbar' style='height:"+Math.max(2,x.received/max*205)+"px'></div><span class='xlabel'>"+monthLabel(x.k)+"</span></div>").join("");
+ document.getElementById("monthlyTable").innerHTML="<table><thead><tr><th>Month</th><th>Credit</th><th>Received</th><th>Gap</th></tr></thead><tbody>"+data.slice().reverse().map(x=>"<tr><td>"+monthLabel(x.k)+"</td><td>"+money(x.credit)+"</td><td>"+money(x.received)+"</td><td>"+money(Math.max(x.credit-x.received,0))+"</td></tr>").join("")+"</tbody></table>"
+}
+function renderBranches(){
+ const data=Object.values(branches).map(b=>{const rs=requests.filter(x=>x.branch_id===b.id);const ids=rs.map(x=>x.id);const inv=invoices.filter(i=>ids.includes(i.request_id));const iids=inv.map(i=>i.id);return {name:b.branch_name,credit:rs.filter(x=>x.status==="APPROVED"||x.status==="CLOSED").reduce((a,x)=>a+Number(x.approved_amount||0),0),received:receipts.filter(r=>iids.includes(r.invoice_id)).reduce((a,x)=>a+Number(x.received_amount||0),0)}}).filter(x=>x.credit||x.received).sort((a,b)=>b.credit-a.credit);
+ const max=Math.max(1,...data.map(x=>Math.max(x.credit,x.received)));
+ document.getElementById("branchChart").innerHTML=data.map(x=>"<div class='branchrow'><div class='branchhead'><strong>"+x.name+"</strong><span>"+money(x.credit)+" / "+money(x.received)+"</span></div><div class='track'><span class='c' style='width:"+x.credit/max*100+"%'></span><span class='r' style='width:"+x.received/max*100+"%'></span></div><div class='branchvalues'><span>Credit approved</span><span>Received</span></div></div>").join("")||"<div class='empty'>No branch data.</div>";
+ document.getElementById("branchTable").innerHTML="<table><thead><tr><th>Branch</th><th>Credit</th><th>Received</th><th>Gap</th></tr></thead><tbody>"+data.map(x=>"<tr><td><strong>"+x.name+"</strong></td><td>"+money(x.credit)+"</td><td>"+money(x.received)+"</td><td>"+money(Math.max(x.credit-x.received,0))+"</td></tr>").join("")+"</tbody></table>"
+}
+function renderRequests(){document.getElementById("tbody").innerHTML=requests.length?requests.slice(0,100).map(x=>"<tr><td><strong>"+x.request_no+"</strong></td><td>"+new Date(x.created_at).toLocaleDateString("en-IN")+"</td><td>"+(branches[x.branch_id]?.branch_name||"-")+"</td><td>"+x.customer_name+"</td><td>"+money(x.approved_amount||0)+"</td><td>"+(x.approved_credit_days??x.requested_credit_days)+"</td><td><span class='status "+x.status+"'>"+x.status+"</span></td><td><button class='view' onclick='alert("Review screen will be connected to this request next.")'>View</button></td></tr>").join(""):"<tr><td colspan='8' class='empty'>No credit requests found.</td></tr>"}
+document.getElementById("logout").onclick=async()=>{await s.auth.signOut();location.href="credit-login.html"};
+(async()=>{if(await auth()){await loadBranches();await loadAll()}})();
+</script></body></html>
