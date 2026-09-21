@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Krishna Credit Portal</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--navy:#132238;--blue:#1d4ed8;--bg:#f5f7fb;--text:#172033;--muted:#6b7280;--white:#fff;--border:#e5e7eb}
+:root{--navy:#132238;--blue:#1d4ed8;--bg:#f5f7fb;--text:#172033;--muted:#6b7280;--border:#e5e7eb;--green:#059669;--red:#b91c1c}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}
 .top{background:var(--navy);color:#fff;padding:18px 22px 22px}.topin{max-width:1100px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:15px}
 .brand{font-size:21px;font-weight:800}.sub{font-size:12px;opacity:.72;margin-top:3px}.user{font-size:13px;text-align:right}
 .wrap{max-width:1100px;margin:auto;padding:22px}.welcome{margin-bottom:22px}.welcome h1{margin:0;font-size:27px}.welcome p{margin:6px 0;color:var(--muted)}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
-.stat{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:0 2px 8px #00000008}.stat .label{font-size:13px;color:var(--muted)}.stat .num{font-size:28px;font-weight:800;margin-top:8px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}.stat{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:0 2px 8px #00000008}.stat .label{font-size:13px;color:var(--muted)}.stat .num{font-size:28px;font-weight:800;margin-top:8px}
 .actions{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:22px}.action{background:#fff;border:1px solid var(--border);border-radius:16px;padding:22px;text-align:left;cursor:pointer;transition:.15s}.action:hover{transform:translateY(-2px);box-shadow:0 5px 18px #00000010}.icon{font-size:25px;margin-bottom:12px}.action h3{margin:0 0 6px}.action p{margin:0;color:var(--muted);font-size:13px}
 .panel{background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:18px}.panelhead{display:flex;justify-content:space-between;align-items:center}.panel h2{font-size:18px;margin:0}.empty{text-align:center;padding:30px 10px;color:var(--muted)}
-.bottom{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:18px;color:var(--muted);font-size:13px}
-button{border:0;border-radius:9px;padding:10px 15px;background:#fff;color:#fff;cursor:pointer}.logout{background:#334155}.error{color:#b91c1c;background:#fee2e2;padding:12px;border-radius:10px;margin-top:15px;display:none}
-@media(max-width:700px){.wrap{padding:16px}.top{padding:16px}.grid{grid-template-columns:repeat(2,1fr)}.actions{grid-template-columns:1fr}.welcome h1{font-size:23px}.user{display:none}}
+.formpanel{display:none}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.field{margin-bottom:14px}.field.full{grid-column:1/-1}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}.field input,.field textarea{width:100%;padding:12px;border:1px solid #d7dce5;border-radius:9px;font-size:14px;font-family:inherit}.field textarea{min-height:90px;resize:vertical}.readonly{background:#f3f4f6}.required{color:#b91c1c}
+.formactions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px}.btn{border:0;border-radius:9px;padding:11px 16px;font-weight:700;cursor:pointer}.btn.secondary{background:#e5e7eb;color:#374151}.btn.primary{background:var(--blue);color:#fff}.btn.green{background:var(--green);color:#fff}.btn:disabled{opacity:.6;cursor:not-allowed}
+.notice{display:none;padding:12px;border-radius:10px;margin-bottom:16px;font-size:13px}.notice.error{background:#fee2e2;color:var(--red)}.notice.success{background:#dcfce7;color:#166534}
+.bottom{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:18px;color:var(--muted);font-size:13px}.logout{background:#334155;color:#fff}
+@media(max-width:700px){.wrap{padding:16px}.top{padding:16px}.grid{grid-template-columns:repeat(2,1fr)}.actions{grid-template-columns:1fr}.welcome h1{font-size:23px}.user{display:none}.formgrid{grid-template-columns:1fr}.field.full{grid-column:auto}.formactions{flex-direction:column}.formactions .btn{width:100%}}
+@media(max-width:500px){.grid{grid-template-columns:1fr 1fr}.stat .num{font-size:24px}}
 </style>
 </head>
 <body>
@@ -30,39 +31,96 @@ button{border:0;border-radius:9px;padding:10px 15px;background:#fff;color:#fff;c
 <div class="stat"><div class="label">Approved</div><div class="num" id="approved">0</div></div>
 <div class="stat"><div class="label">Rejected / Hold</div><div class="num" id="other">0</div></div>
 </section>
+
 <section class="actions">
 <div class="action" onclick="newRequest()"><div class="icon">＋</div><h3>New Credit Request</h3><p>Create a new customer credit approval request.</p></div>
 <div class="action" onclick="myRequests()"><div class="icon">▤</div><h3>My Requests</h3><p>View requests, status and approval history.</p></div>
 <div class="action" onclick="notifications()"><div class="icon">♢</div><h3>Notifications</h3><p>View approval and system notifications.</p></div>
 <div class="action" onclick="alert('Payment and receipt tracking will be available after approval.')"><div class="icon">₹</div><h3>Payment Tracking</h3><p>Track invoices, receipts and pending payments.</p></div>
 </section>
+
+<section class="panel formpanel" id="formPanel">
+<div class="panelhead"><h2>New Credit Request</h2><button class="btn secondary" onclick="closeForm()">✕ Close</button></div>
+<p style="color:var(--muted);font-size:13px">Branch is automatically linked to your login. Save as Draft if information is incomplete, or submit when ready for approval.</p>
+<div id="formNotice" class="notice"></div>
+<form id="requestForm">
+<div class="formgrid">
+<div class="field"><label>Branch</label><input id="branchField" class="readonly" readonly></div>
+<div class="field"><label>Employee</label><input id="employeeField" class="readonly" readonly></div>
+<div class="field"><label>Customer Code</label><input id="customerCode" maxlength="100" placeholder="Enter customer code"></div>
+<div class="field"><label>Customer Name <span class="required">*</span></label><input id="customerName" maxlength="200" required placeholder="Enter customer name"></div>
+<div class="field"><label>Requested Credit Amount (₹) <span class="required">*</span></label><input id="amount" type="number" min="0.01" step="0.01" required placeholder="0.00"></div>
+<div class="field"><label>Requested Credit Days <span class="required">*</span></label><input id="days" type="number" min="0" step="1" required placeholder="0"></div>
+<div class="field full"><label>Purpose <span class="required">*</span></label><textarea id="purpose" maxlength="1000" required placeholder="Why is credit required?"></textarea></div>
+<div class="field full"><label>Remarks</label><textarea id="remarks" maxlength="2000" placeholder="Additional information, if any"></textarea></div>
+</div>
+<div class="formactions">
+<button type="button" class="btn secondary" id="draftBtn" onclick="saveRequest('DRAFT')">Save as Draft</button>
+<button type="button" class="btn green" id="submitBtn" onclick="saveRequest('SUBMIT')">Submit for Approval</button>
+</div>
+</form>
+</section>
+
 <section class="panel"><div class="panelhead"><h2>Recent Requests</h2></div><div id="recent" class="empty">No requests yet.</div></section>
-<section class="bottom"><span id="email"></span><button class="logout" id="logout">Logout</button></section>
-<div id="error" class="error"></div>
+<section class="bottom"><span id="email"></span><button class="btn logout" id="logout">Logout</button></section>
 </main>
 <script>
 const SUPABASE_URL="https://vqcsxozodlduvzwqumoz.supabase.co";
 const SUPABASE_KEY="sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let profile=null;
-function newRequest(){alert("New Credit Request screen will be added next.");}
+let profile=null,branchInfo=null;
+
+function showNotice(t,type){const e=document.getElementById("formNotice");e.textContent=t;e.className="notice "+type;e.style.display="block";}
+function newRequest(){
+ document.getElementById("formPanel").style.display="block";
+ document.getElementById("formPanel").scrollIntoView({behavior:"smooth",block:"start"});
+ document.getElementById("formNotice").style.display="none";
+ document.getElementById("requestForm").reset();
+ document.getElementById("branchField").value=branchInfo?branchInfo.branch_name+" • "+branchInfo.branch_code:"";
+ document.getElementById("employeeField").value=profile?profile.employee_name:"";
+}
+function closeForm(){document.getElementById("formPanel").style.display="none";}
 function myRequests(){alert("My Requests screen will be added next.");}
 function notifications(){alert("Notifications screen will be added next.");}
-function showError(t){const e=document.getElementById("error");e.textContent=t;e.style.display="block";}
-async function load(){
- const {data:{user}}=await supabaseClient.auth.getUser();
- if(!user){location.href="credit-login.html";return;}
- const {data:p,error}=await supabaseClient.from("credit_users").select("id,employee_name,email,role,branch_id,is_active").eq("id",user.id).maybeSingle();
- if(error||!p||!p.is_active||p.role!=="BRANCH_USER"){await supabaseClient.auth.signOut();showError("Access denied. Please contact the COO.");return;}
- profile=p;
- let b=null;
- if(p.branch_id){const r=await supabaseClient.from("credit_branches").select("branch_name,branch_code").eq("id",p.branch_id).maybeSingle();b=r.data;}
- document.getElementById("welcome").textContent="Welcome, "+p.employee_name;
- document.getElementById("branch").textContent=(b?b.branch_name+" • "+b.branch_code:"Branch")+" | Branch User";
- document.getElementById("topUser").textContent=b?b.branch_name:"Branch User";
- document.getElementById("email").textContent=p.email;
- const r=await supabaseClient.from("credit_requests").select("id,request_no,customer_name,requested_amount,status,created_at").eq("branch_id",p.branch_id).order("created_at",{ascending:false});
- if(r.error){showError("Unable to load requests: "+r.error.message);return;}
+
+async function saveRequest(mode){
+ if(!profile||!profile.branch_id){showNotice("Your branch is not configured. Please contact the COO.","error");return;}
+ const customerName=document.getElementById("customerName").value.trim();
+ const customerCode=document.getElementById("customerCode").value.trim()||null;
+ const amount=Number(document.getElementById("amount").value);
+ const days=Number(document.getElementById("days").value);
+ const purpose=document.getElementById("purpose").value.trim();
+ const remarks=document.getElementById("remarks").value.trim()||null;
+ if(!customerName||!Number.isFinite(amount)||amount<=0||!Number.isInteger(days)||days<0||!purpose){
+  showNotice("Please complete all required fields correctly.","error");return;
+ }
+ const draft=document.getElementById("draftBtn"),submit=document.getElementById("submitBtn");
+ draft.disabled=true;submit.disabled=true;showNotice(mode==="DRAFT"?"Saving draft...":"Submitting for approval...","success");
+ try{
+  const ins=await supabaseClient.from("credit_requests").insert({
+   branch_id:profile.branch_id,created_by:profile.id,customer_code:customerCode,customer_name:customerName,
+   requested_amount:amount,requested_credit_days:days,purpose,remarks,status:"DRAFT"
+  }).select("id,request_no").single();
+  if(ins.error)throw ins.error;
+  if(mode==="SUBMIT"){
+   const sub=await supabaseClient.rpc("credit_submit_request",{p_request_id:ins.data.id});
+   if(sub.error)throw sub.error;
+   showNotice("Request "+ins.data.request_no+" submitted successfully for approval.","success");
+  }else{
+   showNotice("Request "+ins.data.request_no+" saved as Draft.","success");
+  }
+  document.getElementById("requestForm").reset();
+  document.getElementById("branchField").value=branchInfo?branchInfo.branch_name+" • "+branchInfo.branch_code:"";
+  document.getElementById("employeeField").value=profile.employee_name;
+  await loadRequests();
+ }catch(e){
+  showNotice("Unable to save request: "+e.message,"error");
+ }finally{draft.disabled=false;submit.disabled=false;}
+}
+
+async function loadRequests(){
+ const r=await supabaseClient.from("credit_requests").select("id,request_no,customer_name,requested_amount,status,created_at").eq("branch_id",profile.branch_id).order("created_at",{ascending:false});
+ if(r.error){showNotice("Unable to load requests: "+r.error.message,"error");return;}
  const rows=r.data||[];
  document.getElementById("draft").textContent=rows.filter(x=>x.status==="DRAFT").length;
  document.getElementById("pending").textContent=rows.filter(x=>x.status==="SUBMITTED"||x.status==="HOLD").length;
@@ -70,7 +128,23 @@ async function load(){
  document.getElementById("other").textContent=rows.filter(x=>x.status==="REJECTED").length;
  if(rows.length){
   document.getElementById("recent").innerHTML=rows.slice(0,5).map(x=>"<div style='padding:12px 0;border-bottom:1px solid #eee'><strong>"+x.request_no+"</strong> — "+x.customer_name+"<br><span style='color:#6b7280;font-size:13px'>₹ "+Number(x.requested_amount).toLocaleString("en-IN")+" • "+x.status+"</span></div>").join("");
- }
+ }else document.getElementById("recent").innerHTML="No requests yet.";
+}
+
+async function load(){
+ const {data:{user}}=await supabaseClient.auth.getUser();
+ if(!user){location.href="credit-login.html";return;}
+ const {data:p,error}=await supabaseClient.from("credit_users").select("id,employee_name,email,role,branch_id,is_active").eq("id",user.id).maybeSingle();
+ if(error||!p||!p.is_active||p.role!=="BRANCH_USER"){await supabaseClient.auth.signOut();document.getElementById("recent").textContent="Access denied. Please contact the COO.";return;}
+ profile=p;
+ if(p.branch_id){const r=await supabaseClient.from("credit_branches").select("branch_name,branch_code").eq("id",p.branch_id).maybeSingle();branchInfo=r.data;}
+ document.getElementById("welcome").textContent="Welcome, "+p.employee_name;
+ document.getElementById("branch").textContent=(branchInfo?branchInfo.branch_name+" • "+branchInfo.branch_code:"Branch")+" | Branch User";
+ document.getElementById("topUser").textContent=branchInfo?branchInfo.branch_name:"Branch User";
+ document.getElementById("email").textContent=p.email;
+ document.getElementById("branchField").value=branchInfo?branchInfo.branch_name+" • "+branchInfo.branch_code:"";
+ document.getElementById("employeeField").value=p.employee_name;
+ await loadRequests();
 }
 document.getElementById("logout").onclick=async()=>{await supabaseClient.auth.signOut();location.href="credit-login.html";};
 load();
