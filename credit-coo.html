@@ -20,11 +20,11 @@
 <div class="title"><div><h1>COO Dashboard</h1><p>Credit approval oversight and administrator control.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="createInvite('ADMIN_1')">＋ Admin 1 Invitation</button><button class="btn primary" onclick="createInvite('ADMIN_2')">＋ Admin 2 Invitation</button></div></div>
 <div class="cards"><div class="card"><div class="muted">Pending Approval</div><div class="num" id="pending">0</div></div><div class="card"><div class="muted">Active Admins</div><div class="num" id="admins">0</div></div><div class="card"><div class="muted">Total Requests</div><div class="num" id="total">0</div></div></div>
 <section class="panel"><h2>Admin Registration Link</h2><div class="muted">Generate a separate single-use invitation for Admin 1 or Admin 2. Each administrator creates their own password.</div><div id="linkArea" class="linkbox" style="display:none"><input id="inviteLink" readonly><button class="btn primary" onclick="copyLink()">Copy Link</button></div><div id="linkMsg" class="success"></div><div id="linkError" class="error"></div></section>
+</div>
+
 <section class="panel appSection" id="adminSection"><h2>Admin Approval Control</h2><div style="overflow:auto"><table><thead><tr><th>Admin</th><th>Email</th><th>Approval Rights</th><th>Action</th></tr></thead><tbody id="adminRows"></tbody></table></div></section>
 <section class="panel appSection" id="requestsSection"><h2>Approval Requests</h2><div id="requests" class="muted">Loading...</div></section>
 <section class="panel appSection" id="auditSection"><h2>Admin Control Audit Log</h2><p class="muted">History of administrator activation, blocking and approval-right changes.</p><div style="overflow:auto"><table><thead><tr><th>Date</th><th>Admin</th><th>Action</th><th>Reason</th><th>Changed By</th></tr></thead><tbody id="auditRows"><tr><td colspan="5" class="muted">Loading...</td></tr></tbody></table></div></section>
-
-</div>
 
 <section class="panel" id="paymentSection" style="display:none">
 <div class="title"><div><h2 style="margin:0">Payment Tracking</h2><p class="muted">Invoice, receipt and pending payment overview across all branches.</p></div></div>
