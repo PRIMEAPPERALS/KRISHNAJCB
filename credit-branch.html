@@ -61,6 +61,14 @@
 <div class="field"><label>Requested Credit Days <span class="required">*</span></label><input id="days" type="number" min="0" step="1" required placeholder="0"></div>
 <div class="field full"><label>Purpose <span class="required">*</span></label><textarea id="purpose" maxlength="1000" required placeholder="Why is credit required?"></textarea></div>
 <div class="field full"><label>Remarks</label><textarea id="remarks" maxlength="2000" placeholder="Additional information, if any"></textarea></div>
+<div class="field full">
+<div style="padding:14px;background:#f8fafc;border:1px solid var(--border);border-radius:10px">
+<div style="font-weight:800;margin-bottom:8px">Supporting Documents</div>
+<div style="color:var(--muted);font-size:12px;margin-bottom:9px">Upload PDF, JPG, JPEG or PNG files. Maximum 5 files, 10 MB each.</div>
+<input id="supportingFiles" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple>
+<div id="selectedFiles" style="margin-top:8px;color:var(--muted);font-size:12px"></div>
+</div>
+</div>
 </div>
 <div class="formactions">
 <button type="button" class="btn secondary" id="draftBtn" onclick="saveRequest('DRAFT')">Save as Draft</button>
@@ -109,6 +117,57 @@ function newRequest(){
  document.getElementById("employeeField").value=profile?profile.employee_name:"";
 }
 function closeForm(){document.getElementById("formPanel").style.display="none";}
+function showSelectedFiles(){
+ const files=[...(document.getElementById("supportingFiles")?.files||[])];
+ document.getElementById("selectedFiles").textContent=files.length?files.map(f=>f.name+" ("+(f.size/1024/1024).toFixed(2)+" MB)").join(" • "):"";
+}
+document.getElementById("supportingFiles")?.addEventListener("change",showSelectedFiles);
+
+async function uploadDocuments(requestId){
+ const input=document.getElementById("supportingFiles");
+ const files=[...(input?.files||[])];
+ if(!files.length)return;
+ if(files.length>5)throw new Error("Maximum 5 supporting documents are allowed.");
+ const allowed=["application/pdf","image/jpeg","image/png"];
+ for(const file of files){
+  if(file.size<=0)throw new Error("Invalid file: "+file.name);
+  if(file.size>10*1024*1024)throw new Error("File exceeds 10 MB: "+file.name);
+  if(!allowed.includes(file.type))throw new Error("Unsupported file type: "+file.name);
+ }
+ for(const file of files){
+  const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+  const storagePath=requestId+"/"+Date.now()+"_"+safeName;
+  const up=await supabaseClient.storage.from("credit-documents").upload(storagePath,file,{upsert:false,contentType:file.type});
+  if(up.error)throw up.error;
+  const doc=await supabaseClient.rpc("credit_register_document",{
+   p_request_id:requestId,
+   p_file_name:file.name,
+   p_storage_path:storagePath,
+   p_file_type:file.type,
+   p_file_size:file.size
+  });
+  if(doc.error)throw doc.error;
+ }
+}
+
+async function loadDocuments(requestId){
+ const box=document.getElementById("documentList");
+ if(!box)return;
+ box.innerHTML="<div style='color:var(--muted);font-size:13px'>Loading documents...</div>";
+ const r=await supabaseClient.from("credit_request_documents").select("id,file_name,file_type,file_size,storage_path,created_at").eq("request_id",requestId).order("created_at",{ascending:true});
+ if(r.error){box.innerHTML="<div style='color:#b91c1c;font-size:13px'>Unable to load documents.</div>";return;}
+ const docs=r.data||[];
+ if(!docs.length){box.innerHTML="<div style='color:var(--muted);font-size:13px'>No supporting documents uploaded.</div>";return;}
+ box.innerHTML=docs.map(d=>"<div style='display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)'>"+
+   "<div><strong>"+esc(d.file_name)+"</strong><br><small style='color:var(--muted)'>"+(Number(d.file_size||0)/1024/1024).toFixed(2)+" MB • "+new Date(d.created_at).toLocaleString("en-IN")+"</small></div>"+
+   "<button class='btn primary' onclick='openDocument(&quot;"+esc(d.storage_path)+"&quot;)'>View</button></div>").join("");
+}
+
+async function openDocument(path){
+ const r=await supabaseClient.storage.from("credit-documents").createSignedUrl(path,600);
+ if(r.error){alert("Unable to open document: "+r.error.message);return;}
+ window.open(r.data.signedUrl,"_blank","noopener");
+}
 async function myRequests(){
  document.getElementById("myRequestsPanel").style.display="block";
  document.getElementById("myRequestsPanel").scrollIntoView({behavior:"smooth",block:"start"});
@@ -148,10 +207,12 @@ async function viewRequest(id){
  (x.approval_remarks?"<br><strong>Approval Remarks:</strong> "+esc(x.approval_remarks):"")+
  (x.decision_reason?"<br><strong>Decision/Hold Reason:</strong> "+esc(x.decision_reason):"")+
  "</div>"+
+ "<div style='margin-top:18px;padding:15px;background:#f8fafc;border-radius:10px'><h3 style='margin:0 0 10px'>Supporting Documents</h3><div id='documentList'>Loading documents...</div></div>"+
  "<h3 style='margin-top:22px'>Request Timeline</h3>"+
  (history.length?history.map(y=>"<div style='padding:12px 0;border-bottom:1px solid var(--border)'><strong>"+esc(y.action)+"</strong><br><small>"+new Date(y.created_at).toLocaleString("en-IN")+"</small>"+(y.reason?"<br>Reason: "+esc(y.reason):"")+(y.remarks?"<br>Remarks: "+esc(y.remarks):"")+(y.approved_amount!=null?"<br>Approved: "+money(y.approved_amount):"")+"</div>").join(""):"<div class='empty'>No history available.</div>");
  document.getElementById("requestDetailsPanel").style.display="block";
  document.getElementById("requestDetailsPanel").scrollIntoView({behavior:"smooth",block:"start"});
+ await loadDocuments(id);
 }
 async function notifications(){
  document.getElementById("notificationsPanel").style.display="block";
@@ -304,6 +365,7 @@ async function saveRequest(mode){
    requested_amount:amount,requested_credit_days:days,purpose,remarks,status:"DRAFT"
   }).select("id,request_no").single();
   if(ins.error)throw ins.error;
+  await uploadDocuments(ins.data.id);
   if(mode==="SUBMIT"){
    const sub=await supabaseClient.rpc("credit_submit_request",{p_request_id:ins.data.id});
    if(sub.error)throw sub.error;
@@ -312,6 +374,7 @@ async function saveRequest(mode){
    showNotice("Request "+ins.data.request_no+" saved as Draft.","success");
   }
   document.getElementById("requestForm").reset();
+  document.getElementById("selectedFiles").textContent="";
   document.getElementById("customerStatus").innerHTML="Enter Customer Code and Customer Name. Customer Master details will be linked automatically when the request is saved.";
   document.getElementById("branchField").value=branchInfo?branchInfo.branch_name+" • "+branchInfo.branch_code:"";
   document.getElementById("employeeField").value=profile.employee_name;
