@@ -35,7 +35,7 @@
 <section class="actions">
 <div class="action" onclick="newRequest()"><div class="icon">＋</div><h3>New Credit Request</h3><p>Create a new customer credit approval request.</p></div>
 <div class="action" onclick="myRequests()"><div class="icon">▤</div><h3>My Requests</h3><p>View requests, status and approval history.</p></div>
-<div class="action" onclick="notifications()"><div class="icon">♢</div><h3>Notifications</h3><p>View approval and system notifications.</p></div>
+<div class="action" onclick="notifications()"><div class="icon">♢</div><h3>Notifications <span id="notifBadge" style="display:none;background:#dc2626;color:#fff;border-radius:999px;padding:3px 7px;font-size:11px"></span></h3><p>View approval and system notifications.</p></div>
 <div class="action" onclick="alert('Payment and receipt tracking will be available after approval.')"><div class="icon">₹</div><h3>Payment Tracking</h3><p>Track invoices, receipts and pending payments.</p></div>
 </section>
 
@@ -68,6 +68,11 @@
 <section class="panel" id="requestDetailsPanel" style="display:none">
 <div class="panelhead"><h2 id="detailsTitle">Request Details</h2><button class="btn secondary" onclick="closeDetails()">✕ Close</button></div>
 <div id="detailsContent"></div>
+</section>
+<section class="panel" id="notificationsPanel" style="display:none">
+<div class="panelhead"><h2>Notifications</h2><button class="btn secondary" onclick="closeNotifications()">✕ Close</button></div>
+<div style="display:flex;justify-content:flex-end;margin:10px 0"><button class="btn secondary" onclick="markAllRead()">Mark all as read</button></div>
+<div id="notificationList" class="empty">No notifications.</div>
 </section>
 <section class="panel"><div class="panelhead"><h2>Recent Requests</h2></div><div id="recent" class="empty">No requests yet.</div></section>
 <section class="bottom"><span id="email"></span><button class="btn logout" id="logout">Logout</button></section>
@@ -132,7 +137,40 @@ async function viewRequest(id){
  document.getElementById("requestDetailsPanel").style.display="block";
  document.getElementById("requestDetailsPanel").scrollIntoView({behavior:"smooth",block:"start"});
 }
-function notifications(){alert("Notifications screen will be added next.");}
+async function notifications(){
+ document.getElementById("notificationsPanel").style.display="block";
+ document.getElementById("notificationsPanel").scrollIntoView({behavior:"smooth",block:"start"});
+ await loadNotifications();
+}
+function closeNotifications(){document.getElementById("notificationsPanel").style.display="none";}
+function notificationStyle(type){
+ const map={APPROVED:["#dcfce7","#166534"],REJECTED:["#fee2e2","#991b1b"],HOLD:["#fef3c7","#92400e"],REOPENED:["#eef2ff","#3730a3"],PAYMENT_UPDATE:["#e0f2fe","#075985"],CLOSURE:["#f3e8ff","#6b21a8"],SYSTEM:["#f3f4f6","#374151"]};
+ return map[type]||["#eef2ff","#3730a3"];
+}
+async function loadNotifications(){
+ const r=await supabaseClient.from("credit_notifications").select("id,request_id,notification_type,title,message,is_read,read_at,created_at").eq("recipient_user_id",profile.id).order("created_at",{ascending:false}).limit(50);
+ if(r.error){document.getElementById("notificationList").textContent="Unable to load notifications: "+r.error.message;return;}
+ const rows=r.data||[],unread=rows.filter(x=>!x.is_read).length;
+ const badge=document.getElementById("notifBadge");badge.textContent=unread;badge.style.display=unread?"inline-block":"none";
+ if(!rows.length){document.getElementById("notificationList").innerHTML="<div class='empty'>No notifications yet.</div>";return;}
+ document.getElementById("notificationList").innerHTML=rows.map(x=>{
+  const c=notificationStyle(x.notification_type);
+  return "<div onclick='openNotification(""+x.id+"")' style='padding:15px 5px;border-bottom:1px solid var(--border);cursor:pointer;opacity:"+(x.is_read?"0.72":"1")+"'>"+
+  "<div style='display:flex;justify-content:space-between;gap:10px'><strong>"+esc(x.title||x.notification_type)+"</strong><small>"+new Date(x.created_at).toLocaleString("en-IN")+"</small></div>"+
+  "<div style='margin-top:7px'><span style='background:"+c[0]+";color:"+c[1]+";padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700'>"+esc(x.notification_type)+"</span>"+(!x.is_read?" <span style='font-size:11px;font-weight:700;color:#1d4ed8'>NEW</span>":"")+"</div>"+
+  "<div style='margin-top:8px;color:#4b5563;font-size:13px'>"+esc(x.message||"")+"</div></div>";
+ }).join("");
+}
+async function openNotification(id){
+ const r=await supabaseClient.from("credit_notifications").update({is_read:true,read_at:new Date().toISOString()}).eq("id",id).eq("recipient_user_id",profile.id);
+ if(r.error){alert("Unable to mark notification as read: "+r.error.message);return;}
+ await loadNotifications();
+}
+async function markAllRead(){
+ const r=await supabaseClient.from("credit_notifications").update({is_read:true,read_at:new Date().toISOString()}).eq("recipient_user_id",profile.id).eq("is_read",false);
+ if(r.error){alert("Unable to mark notifications as read: "+r.error.message);return;}
+ await loadNotifications();
+}
 
 async function saveRequest(mode){
  if(!profile||!profile.branch_id){showNotice("Your branch is not configured. Please contact the COO.","error");return;}
@@ -196,6 +234,7 @@ async function load(){
  document.getElementById("branchField").value=branchInfo?branchInfo.branch_name+" • "+branchInfo.branch_code:"";
  document.getElementById("employeeField").value=p.employee_name;
  await loadRequests();
+ await loadNotifications();
 }
 document.getElementById("logout").onclick=async()=>{await supabaseClient.auth.signOut();location.href="credit-login.html";};
 load();
