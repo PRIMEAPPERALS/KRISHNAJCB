@@ -170,7 +170,7 @@ async function openDocument(path){
  if(r.error){alert("Unable to open document: "+r.error.message);return;}
  window.open(r.data.signedUrl,"_blank","noopener");
 }
-async function myRequests(){
+async async function myRequests(){
  document.getElementById("myRequestsPanel").style.display="block";
  document.getElementById("myRequestsPanel").scrollIntoView({behavior:"smooth",block:"start"});
  await renderMyRequests();
@@ -248,7 +248,7 @@ async function viewRequest(id){
  document.getElementById("requestDetailsPanel").scrollIntoView({behavior:"smooth",block:"start"});
  await loadDocuments(id);
 }
-async function notifications(){
+async async function notifications(){
  document.getElementById("notificationsPanel").style.display="block";
  document.getElementById("notificationsPanel").scrollIntoView({behavior:"smooth",block:"start"});
  await loadNotifications();
