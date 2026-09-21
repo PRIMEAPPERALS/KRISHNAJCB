@@ -8,7 +8,7 @@
 :root{--navy:#14243a;--blue:#2563eb;--bg:#f4f7fb;--text:#172033;--muted:#687386;--line:#e5e9f0;--green:#059669;--amber:#d97706;--red:#dc2626}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
 header{height:72px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 28px}.brand{font-size:20px;font-weight:800}.brand small{display:block;font-size:11px;opacity:.7;margin-top:3px}.admin{display:flex;align-items:center;gap:10px;font-size:13px}.avatar{width:38px;height:38px;border-radius:50%;background:#fff;color:var(--navy);display:grid;place-items:center;font-weight:800}
-.layout{display:flex;min-height:calc(100vh - 72px)}aside{width:235px;background:#17283f;color:#fff;padding:22px 14px}.nav{padding:13px 14px;border-radius:9px;margin-bottom:5px;color:#dbe4f0;font-size:14px}.nav.active{background:var(--blue);color:#fff;font-weight:700}.nav b{float:right;background:#ef4444;border-radius:12px;padding:2px 7px;font-size:11px}.logout{margin-top:25px;cursor:pointer}
+.layout{display:flex;min-height:calc(100vh - 72px)}aside{width:235px;background:#17283f;color:#fff;padding:22px 14px}.nav{padding:13px 14px;border-radius:9px;margin-bottom:5px;color:#dbe4f0;font-size:14px}.nav.active{background:var(--blue);color:#fff;font-weight:700}.nav.clickable{cursor:pointer}.nav b{float:right;background:#ef4444;border-radius:12px;padding:2px 7px;font-size:11px}.logout{margin-top:25px;cursor:pointer}
 main{flex:1;padding:28px;max-width:1450px;margin:auto;width:100%}.title{margin-bottom:20px}.title h1{margin:0;font-size:27px}.title p{margin:6px 0;color:var(--muted);font-size:14px}
 .filters{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;gap:10px;margin-bottom:18px}.filters select,.filters input{padding:11px;border:1px solid #d8dee8;border-radius:8px;background:#fff;font-size:14px}.filters select{min-width:170px}.apply{background:var(--blue);color:#fff;border:0;border-radius:8px;padding:11px 18px;font-weight:700}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.kpi{background:#fff;border:1px solid var(--line);border-radius:13px;padding:18px}.kpi .label{font-size:13px;color:var(--muted)}.kpi .num{font-size:26px;font-weight:800;margin-top:8px}.credit{border-left:4px solid var(--blue)}.received{border-left:4px solid var(--green)}.pending{border-left:4px solid var(--amber)}.month{border-left:4px solid #7c3aed}
@@ -19,7 +19,7 @@ main{flex:1;padding:28px;max-width:1450px;margin:auto;width:100%}.title{margin-b
 </style></head>
 <body>
 <header><div class="brand">KRISHNA AUTOMOBILES<small>CREDIT PORTAL • ADMIN</small></div><div class="admin"><div class="avatar">AN</div><span id="adminName">Admin</span></div></header>
-<div class="layout"><aside><div class="nav active">▦ &nbsp; Dashboard</div><div class="nav">▣ &nbsp; Credit Requests <b id="sidePending">0</b></div><div class="nav">◉ &nbsp; Customer Master</div><div class="nav">▤ &nbsp; Reports & Analytics</div><div class="nav">⚙ &nbsp; Settings</div><div class="nav logout" id="logout">↪ &nbsp; Logout</div></aside>
+<div class="layout"><aside><div class="nav active">▦ &nbsp; Dashboard</div><div class="nav">▣ &nbsp; Credit Requests <b id="sidePending">0</b></div><div class="nav">◉ &nbsp; Customer Master</div><div class="nav clickable" onclick="showPayments()">₹ &nbsp; Payment Tracking</div><div class="nav">▤ &nbsp; Reports & Analytics</div><div class="nav">⚙ &nbsp; Settings</div><div class="nav logout" id="logout">↪ &nbsp; Logout</div></aside>
 <main><div id="error" class="error"></div><div class="title"><h1>Admin Dashboard</h1><p>Credit issued, monthly movement, collections and branch-wise performance.</p></div>
 <div class="filters"><select id="branch"><option value="">All Branches</option></select><select id="status"><option value="">All Status</option><option>SUBMITTED</option><option>HOLD</option><option>APPROVED</option><option>REJECTED</option><option>CLOSED</option></select><input id="customer" placeholder="Customer name"><button class="apply" onclick="loadAll()">Apply</button></div>
 <section class="kpis">
@@ -36,6 +36,7 @@ main{flex:1;padding:28px;max-width:1450px;margin:auto;width:100%}.title{margin-b
 <section class="panel"><h2>Branch-wise Credit vs Received</h2><div id="branchChart"></div></section>
 <section class="panel"><h2>Branch-wise Summary</h2><div id="branchTable" class="tablewrap"></div></section>
 </div>
+<section class="panel" id="paymentPanel" style="display:none"><h2>Payment Tracking</h2><p style="color:var(--muted);font-size:13px">Invoice-wise collections and pending amounts across branches.</p><div class="tablewrap"><table><thead><tr><th>Request</th><th>Branch</th><th>Customer</th><th>Invoices</th><th>Invoiced</th><th>Received</th><th>Pending</th><th>Status</th></tr></thead><tbody id="paymentBody"></tbody></table></div></section>
 <section class="panel"><h2>Credit Requests</h2><div class="tablewrap"><table><thead><tr><th>Request No.</th><th>Date</th><th>Branch</th><th>Customer</th><th>Credit Approved</th><th>Credit Days</th><th>Status</th><th>Action</th></tr></thead><tbody id="tbody"></tbody></table></div></section>
 </main></div>
 <div class="modal" id="reviewModal"><div class="modalbox"><div class="modalhead"><h2 id="reviewTitle">Credit Request Review</h2><button class="close" onclick="closeReview()">✕ Close</button></div><div id="reviewContent"></div></div></div>
@@ -96,9 +97,24 @@ function renderBranches(){
  document.getElementById("branchTable").innerHTML="<table><thead><tr><th>Branch</th><th>Credit</th><th>Received</th><th>Gap</th></tr></thead><tbody>"+data.map(x=>"<tr><td><strong>"+x.name+"</strong></td><td>"+money(x.credit)+"</td><td>"+money(x.received)+"</td><td>"+money(Math.max(x.credit-x.received,0))+"</td></tr>").join("")+"</tbody></table>"
 }
 function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function showPayments(){
+ const p=document.getElementById("paymentPanel");
+ p.style.display=p.style.display==="none"?"block":"none";
+ if(p.style.display==="block") renderPayments();
+}
+function renderPayments(){
+ const rows=requests.map(x=>{
+  const inv=invoices.filter(i=>i.request_id===x.id);
+  const ids=inv.map(i=>i.id);
+  const received=receipts.filter(r=>ids.includes(r.invoice_id)).reduce((a,r)=>a+Number(r.received_amount||0),0);
+  const invoiced=inv.reduce((a,i)=>a+Number(i.invoice_amount||0),0);
+  return {...x,invCount:inv.length,invoiced,received,pending:Math.max(invoiced-received,0)};
+ }).filter(x=>x.invCount>0).sort((a,b)=>b.pending-a.pending);
+ document.getElementById("paymentBody").innerHTML=rows.length?rows.map(x=>"<tr><td><strong>"+esc(x.request_no)+"</strong></td><td>"+esc(branches[x.branch_id]?.branch_name||"-")+"</td><td>"+esc(x.customer_name)+"</td><td>"+x.invCount+"</td><td>"+money(x.invoiced)+"</td><td>"+money(x.received)+"</td><td>"+money(x.pending)+"</td><td><span class='status "+x.status+"'>"+x.status+"</span></td></tr>").join(""):"<tr><td colspan='8' class='empty'>No invoices recorded.</td></tr>";
+}
 function renderRequests(){document.getElementById("tbody").innerHTML=requests.length?requests.slice(0,100).map(x=>"<tr><td><strong>"+esc(x.request_no)+"</strong></td><td>"+new Date(x.created_at).toLocaleDateString("en-IN")+"</td><td>"+esc(branches[x.branch_id]?.branch_name||"-")+"</td><td>"+esc(x.customer_name)+"</td><td>"+money(x.approved_amount||0)+"</td><td>"+(x.approved_credit_days??x.requested_credit_days)+"</td><td><span class='status "+x.status+"'>"+x.status+"</span></td><td><button class='view' onclick='openReview(\""+x.id+"\")'>View</button></td></tr>").join(""):"<tr><td colspan='8' class='empty'>No credit requests found.</td></tr>"}
 async function openReview(id){
- const r=await s.from("credit_requests").select("id,request_no,branch_id,customer_code,customer_name,requested_amount,requested_credit_days,purpose,remarks,status,created_at,submitted_at,approved_amount,approved_credit_days,approval_remarks,decision_reason,decision_at").eq("id",id).maybeSingle();
+ const r=await s.from("credit_requests").select("id,request_no,branch_id,customer_id,customer_code,customer_name,requested_amount,requested_credit_days,purpose,remarks,status,created_at,submitted_at,approved_amount,approved_credit_days,approval_remarks,decision_reason,decision_at").eq("id",id).maybeSingle();
  if(r.error||!r.data){alert("Request could not be loaded.");return}
  const x=r.data;
  let customerStatus=null;
