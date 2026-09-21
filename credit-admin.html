@@ -19,7 +19,14 @@ main{flex:1;padding:28px;max-width:1450px;margin:auto;width:100%}.title{margin-b
 </style></head>
 <body>
 <header><div class="brand">KRISHNA AUTOMOBILES<small>CREDIT PORTAL • ADMIN</small></div><div class="admin"><div class="avatar">AN</div><span id="adminName">Admin</span></div></header>
-<div class="layout"><aside><div class="nav active">▦ &nbsp; Dashboard</div><div class="nav">▣ &nbsp; Credit Requests <b id="sidePending">0</b></div><div class="nav">◉ &nbsp; Customer Master</div><div class="nav clickable" onclick="showPayments()">₹ &nbsp; Payment Tracking</div><div class="nav">▤ &nbsp; Reports & Analytics</div><div class="nav">⚙ &nbsp; Settings</div><div class="nav logout" id="logout">↪ &nbsp; Logout</div></aside>
+<div class="layout"><aside>
+<div class="nav active clickable" data-section="dashboard" onclick="adminSection('dashboard')">▦ &nbsp; Dashboard</div>
+<div class="nav clickable" data-section="requests" onclick="adminSection('requests')">▣ &nbsp; Credit Requests <b id="sidePending">0</b></div>
+<div class="nav clickable" data-section="customers" onclick="adminSection('customers')">◉ &nbsp; Customer Master</div>
+<div class="nav clickable" data-section="payments" onclick="adminSection('payments')">₹ &nbsp; Payment Tracking</div>
+<div class="nav clickable" data-section="reports" onclick="adminSection('reports')">▤ &nbsp; Reports & Analytics</div>
+<div class="nav clickable" data-section="settings" onclick="adminSection('settings')">⚙ &nbsp; Settings</div>
+<div class="nav logout" id="logout">↪ &nbsp; Logout</div></aside>
 <main><div id="error" class="error"></div><div class="title"><h1>Admin Dashboard</h1><p>Credit issued, monthly movement, collections and branch-wise performance.</p></div>
 <div class="filters"><select id="branch"><option value="">All Branches</option></select><select id="status"><option value="">All Status</option><option>SUBMITTED</option><option>HOLD</option><option>APPROVED</option><option>REJECTED</option><option>CLOSED</option></select><input id="customer" placeholder="Customer name"><button class="apply" onclick="loadAll()">Apply</button></div>
 <section class="kpis">
@@ -36,6 +43,15 @@ main{flex:1;padding:28px;max-width:1450px;margin:auto;width:100%}.title{margin-b
 <section class="panel"><h2>Branch-wise Credit vs Received</h2><div id="branchChart"></div></section>
 <section class="panel"><h2>Branch-wise Summary</h2><div id="branchTable" class="tablewrap"></div></section>
 </div>
+<section class="panel adminExtra" id="customerPanel" style="display:none">
+<h2>Customer Master</h2><p style="color:var(--muted);font-size:13px">View customer credit information. Customer credit limits are maintained by the COO.</p>
+<div style="display:flex;gap:10px;margin:12px 0"><input id="adminCustomerSearch" placeholder="Customer code or name" style="flex:1;padding:11px;border:1px solid #d8dee8;border-radius:8px"><button class="apply" onclick="loadAdminCustomers()">Search</button></div>
+<div class="tablewrap"><table><thead><tr><th>Customer</th><th>Credit Limit</th><th>Outstanding</th><th>Available</th><th>Credit Days</th><th>Status</th></tr></thead><tbody id="adminCustomerBody"></tbody></table></div>
+</section>
+<section class="panel adminExtra" id="settingsPanel" style="display:none">
+<h2>Settings</h2><p style="color:var(--muted);font-size:13px">Your portal access is controlled by the COO. Approval rights, account activation and role changes cannot be changed from this page.</p>
+<div class="detail" style="margin-top:12px"><label>Current Account</label><strong id="settingsAccount">Loading...</strong></div>
+</section>
 <section class="panel" id="paymentPanel" style="display:none"><h2>Payment Tracking</h2><p style="color:var(--muted);font-size:13px">Invoice-wise collections and pending amounts across branches.</p><div class="tablewrap"><table><thead><tr><th>Request</th><th>Branch</th><th>Customer</th><th>Invoices</th><th>Invoiced</th><th>Received</th><th>Pending</th><th>Status</th></tr></thead><tbody id="paymentBody"></tbody></table></div></section>
 <section class="panel"><h2>Credit Requests</h2><div class="tablewrap"><table><thead><tr><th>Request No.</th><th>Date</th><th>Branch</th><th>Customer</th><th>Credit Approved</th><th>Credit Days</th><th>Status</th><th>Approval Age</th><th>Action</th></tr></thead><tbody id="tbody"></tbody></table></div></section>
 </main></div>
@@ -45,13 +61,32 @@ const U="https://vqcsxozodlduvzwqumoz.supabase.co",K="sb_publishable_w8FhItbY8Lz
 let requests=[],branches={},invoices=[],receipts=[],currentFilter={};
 const money=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:0});
 function showError(t){const e=document.getElementById("error");e.textContent=t;e.style.display="block"}
+function adminSection(name){
+ const ids={dashboard:null,requests:null,customers:"customerPanel",payments:"paymentPanel",reports:null,settings:"settingsPanel"};
+ document.querySelectorAll(".adminExtra").forEach(e=>e.style.display="none");
+ document.querySelectorAll(".nav[data-section]").forEach(e=>e.classList.toggle("active",e.dataset.section===name));
+ if(name==="customers"){document.getElementById("customerPanel").style.display="block";loadAdminCustomers();}
+ if(name==="payments"){showPayments();}
+ if(name==="settings"){document.getElementById("settingsPanel").style.display="block";}
+ if(name==="dashboard"){window.scrollTo({top:0,behavior:"smooth"});}
+ if(name==="requests"){document.getElementById("tbody").closest(".panel").scrollIntoView({behavior:"smooth"});}
+ if(name==="reports"){document.querySelector(".analytics").scrollIntoView({behavior:"smooth"});}
+}
+async function loadAdminCustomers(){
+ const q=(document.getElementById("adminCustomerSearch").value||"").trim();
+ let x=s.from("credit_customer_credit_status").select("customer_code,customer_name,credit_limit,existing_outstanding,available_credit,credit_days,is_active");
+ if(q)x=x.or("customer_code.ilike.%"+q+"%,customer_name.ilike.%"+q+"%");
+ const r=await x.order("customer_name").limit(100);
+ if(r.error){document.getElementById("adminCustomerBody").innerHTML="<tr><td colspan='6'>"+esc(r.error.message)+"</td></tr>";return;}
+ document.getElementById("adminCustomerBody").innerHTML=(r.data||[]).map(v=>"<tr><td><strong>"+esc(v.customer_name)+"</strong><br><small>"+esc(v.customer_code||"")+"</small></td><td>"+money(v.credit_limit)+"</td><td>"+money(v.existing_outstanding)+"</td><td>"+money(v.available_credit)+"</td><td>"+v.credit_days+"</td><td>"+(v.is_active?"ACTIVE":"INACTIVE")+"</td></tr>").join("")||"<tr><td colspan='6'>No customers found.</td></tr>";
+}
 function ym(d){const x=new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")}
 function monthLabel(k){const [y,m]=k.split("-");return new Date(Number(y),Number(m)-1,1).toLocaleDateString("en-IN",{month:"short",year:"2-digit"})}
 async function auth(){
  const {data:{user}}=await s.auth.getUser();if(!user){location.href="credit-login.html";return false}
  const p=await s.from("credit_users").select("employee_name,email,role,is_active").eq("id",user.id).maybeSingle();
  if(p.error||!p.data||!p.data.is_active||!["ADMIN","COO"].includes(p.data.role)){await s.auth.signOut();location.href="credit-login.html";return false}
- document.getElementById("adminName").textContent=p.data.employee_name;return true
+ document.getElementById("adminName").textContent=p.data.employee_name;document.getElementById("settingsAccount").textContent=p.data.employee_name+" • "+p.data.role+" • "+p.data.email;return true
 }
 async function loadBranches(){
  const r=await s.from("credit_branches").select("id,branch_name,branch_code").order("branch_name");if(r.error)throw r.error;
