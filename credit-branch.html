@@ -17,6 +17,8 @@
 .formactions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px}.btn{border:0;border-radius:9px;padding:11px 16px;font-weight:700;cursor:pointer}.btn.secondary{background:#e5e7eb;color:#374151}.btn.primary{background:var(--blue);color:#fff}.btn.green{background:var(--green);color:#fff}.btn:disabled{opacity:.6;cursor:not-allowed}
 .notice{display:none;padding:12px;border-radius:10px;margin-bottom:16px;font-size:13px}.notice.error{background:#fee2e2;color:var(--red)}.notice.success{background:#dcfce7;color:#166534}
 .bottom{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:18px;color:var(--muted);font-size:13px}.logout{background:#334155;color:#fff}
+.paymentgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.paycard{background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:15px}.paycard h3{margin:0 0 10px;font-size:15px}.paytable{width:100%;border-collapse:collapse}.paytable th,.paytable td{text-align:left;padding:9px;border-bottom:1px solid var(--border);font-size:12px}.modal{display:none;position:fixed;inset:0;background:#0008;z-index:30;padding:20px;overflow:auto}.modalbox{max-width:760px;margin:35px auto;background:#fff;border-radius:15px;padding:22px}.modalhead{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:12px}.modalhead h2{margin:0;font-size:19px}
+
 @media(max-width:700px){.wrap{padding:16px}.top{padding:16px}.grid{grid-template-columns:repeat(2,1fr)}.actions{grid-template-columns:1fr}.welcome h1{font-size:23px}.user{display:none}.formgrid{grid-template-columns:1fr}.field.full{grid-column:auto}.formactions{flex-direction:column}.formactions .btn{width:100%}}
 @media(max-width:500px){.grid{grid-template-columns:1fr 1fr}.stat .num{font-size:24px}}
 </style>
@@ -36,7 +38,7 @@
 <div class="action" onclick="newRequest()"><div class="icon">＋</div><h3>New Credit Request</h3><p>Create a new customer credit approval request.</p></div>
 <div class="action" onclick="myRequests()"><div class="icon">▤</div><h3>My Requests</h3><p>View requests, status and approval history.</p></div>
 <div class="action" onclick="notifications()"><div class="icon">♢</div><h3>Notifications <span id="notifBadge" style="display:none;background:#dc2626;color:#fff;border-radius:999px;padding:3px 7px;font-size:11px"></span></h3><p>View approval and system notifications.</p></div>
-<div class="action" onclick="alert('Payment and receipt tracking will be available after approval.')"><div class="icon">₹</div><h3>Payment Tracking</h3><p>Track invoices, receipts and pending payments.</p></div>
+<div class="action" onclick="paymentTracking()"><div class="icon">₹</div><h3>Payment Tracking</h3><p>Track invoices, receipts and pending payments.</p></div>
 </section>
 
 <section class="panel formpanel" id="formPanel">
@@ -75,6 +77,12 @@
 <div class="panelhead"><h2 id="detailsTitle">Request Details</h2><button class="btn secondary" onclick="closeDetails()">✕ Close</button></div>
 <div id="detailsContent"></div>
 </section>
+<section class="panel" id="paymentPanel" style="display:none">
+<div class="panelhead"><h2>Payment Tracking</h2><button class="btn secondary" onclick="closePaymentTracking()">✕ Close</button></div>
+<p style="color:var(--muted);font-size:13px">Manage approved invoices and receipts. Original approval details cannot be changed here.</p>
+<div id="paymentSummary" class="paymentgrid"></div>
+<div style="overflow:auto;margin-top:15px"><table class="paytable"><thead><tr><th>Request</th><th>Customer</th><th>Status</th><th>Invoiced</th><th>Received</th><th>Pending</th><th>Action</th></tr></thead><tbody id="paymentRows"></tbody></table></div>
+</section>
 <section class="panel" id="notificationsPanel" style="display:none">
 <div class="panelhead"><h2>Notifications</h2><button class="btn secondary" onclick="closeNotifications()">✕ Close</button></div>
 <div style="display:flex;justify-content:flex-end;margin:10px 0"><button class="btn secondary" onclick="markAllRead()">Mark all as read</button></div>
@@ -83,6 +91,7 @@
 <section class="panel"><div class="panelhead"><h2>Recent Requests</h2></div><div id="recent" class="empty">No requests yet.</div></section>
 <section class="bottom"><span id="email"></span><button class="btn logout" id="logout">Logout</button></section>
 </main>
+<div class="modal" id="paymentModal"><div class="modalbox"><div class="modalhead"><h2 id="paymentTitle">Payment Details</h2><button class="btn secondary" onclick="closePaymentModal()">✕ Close</button></div><div id="paymentContent"></div></div></div>
 <script>
 const SUPABASE_URL="https://vqcsxozodlduvzwqumoz.supabase.co";
 const SUPABASE_KEY="sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";
@@ -150,6 +159,92 @@ async function notifications(){
  await loadNotifications();
 }
 function closeNotifications(){document.getElementById("notificationsPanel").style.display="none";}
+function closePaymentTracking(){document.getElementById("paymentPanel").style.display="none";}
+function closePaymentModal(){document.getElementById("paymentModal").style.display="none";}
+function paymentTracking(){
+ document.getElementById("paymentPanel").style.display="block";
+ document.getElementById("paymentPanel").scrollIntoView({behavior:"smooth",block:"start"});
+ loadPaymentTracking();
+}
+function payMoney(v){return money(v);}
+async function loadPaymentTracking(){
+ const panel=document.getElementById("paymentPanel");
+ const r=await supabaseClient.from("credit_requests").select("id,request_no,customer_code,customer_name,status,approved_amount,approved_credit_days,created_at,closed_at,receipt_update_open").eq("branch_id",profile.branch_id).in("status",["APPROVED","CLOSED"]).order("created_at",{ascending:false});
+ if(r.error){document.getElementById("paymentRows").innerHTML="<tr><td colspan='7'>"+esc(r.error.message)+"</td></tr>";return;}
+ const reqs=r.data||[],ids=reqs.map(x=>x.id);
+ let inv=[],rec=[];
+ if(ids.length){
+  const ir=await supabaseClient.from("credit_invoices").select("id,request_id,invoice_no,invoice_date,due_date,invoice_amount,remarks").in("request_id",ids).order("invoice_date",{ascending:false});
+  if(ir.error){document.getElementById("paymentRows").innerHTML="<tr><td colspan='7'>"+esc(ir.error.message)+"</td></tr>";return;}
+  inv=ir.data||[];const iids=inv.map(x=>x.id);
+  if(iids.length){const rr=await supabaseClient.from("credit_receipts").select("id,invoice_id,receipt_no,receipt_date,received_amount,payment_mode,remarks").in("invoice_id",iids).order("receipt_date",{ascending:false});if(rr.error){document.getElementById("paymentRows").innerHTML="<tr><td colspan='7'>"+esc(rr.error.message)+"</td></tr>";return;}rec=rr.data||[];}
+ }
+ const data=reqs.map(x=>{
+  const ii=inv.filter(i=>i.request_id===x.id), iid=ii.map(i=>i.id), received=rec.filter(z=>iid.includes(z.invoice_id)).reduce((a,z)=>a+Number(z.received_amount||0),0), invoiced=ii.reduce((a,z)=>a+Number(z.invoice_amount||0),0);
+  return {...x,invoices:ii,received, invoiced,pending:Math.max(invoiced-received,0)};
+ });
+ const totals=data.reduce((a,x)=>({invoiced:a.invoiced+x.invoiced,received:a.received+x.received,pending:a.pending+x.pending}),{invoiced:0,received:0,pending:0});
+ document.getElementById("paymentSummary").innerHTML="<div class='paycard'><h3>Total Invoiced</h3><strong>"+payMoney(totals.invoiced)+"</strong></div><div class='paycard'><h3>Total Received</h3><strong>"+payMoney(totals.received)+"</strong></div><div class='paycard'><h3>Total Pending</h3><strong>"+payMoney(totals.pending)+"</strong></div><div class='paycard'><h3>Approved Requests</h3><strong>"+data.filter(x=>x.status==="APPROVED").length+"</strong></div>";
+ document.getElementById("paymentRows").innerHTML=data.map(x=>"<tr><td><strong>"+esc(x.request_no)+"</strong></td><td>"+esc(x.customer_name)+"</td><td>"+statusBadge(x.status)+(x.receipt_update_open?"<br><small style='color:#b45309'>Receipt update open</small>":"")+"</td><td>"+payMoney(x.invoiced)+"</td><td>"+payMoney(x.received)+"</td><td>"+payMoney(x.pending)+"</td><td><button class='btn primary' onclick='openPayment(""+x.id+"")'>Manage</button></td></tr>").join("")||"<tr><td colspan='7' class='empty'>No approved or closed requests.</td></tr>";
+}
+async function openPayment(id){
+ const r=await supabaseClient.from("credit_requests").select("id,request_no,customer_code,customer_name,status,approved_amount,approved_credit_days,receipt_update_open").eq("id",id).eq("branch_id",profile.branch_id).maybeSingle();
+ if(r.error||!r.data){alert("Request not found.");return;}
+ const x=r.data;
+ const ir=await supabaseClient.from("credit_invoices").select("id,invoice_no,invoice_date,due_date,invoice_amount,remarks").eq("request_id",id).order("invoice_date",{ascending:false});
+ if(ir.error){alert(ir.error.message);return;}
+ const inv=ir.data||[],iids=inv.map(i=>i.id);let rec=[];
+ if(iids.length){const rr=await supabaseClient.from("credit_receipts").select("id,invoice_id,receipt_no,receipt_date,received_amount,payment_mode,remarks").in("invoice_id",iids).order("receipt_date",{ascending:false});if(rr.error){alert(rr.error.message);return;}rec=rr.data||[];}
+ document.getElementById("paymentTitle").textContent=x.request_no+" • Payment Tracking";
+ let html="<div style='padding:13px;background:#f8fafc;border-radius:10px;margin:15px 0'><strong>"+esc(x.customer_name)+"</strong><br>Approved Amount: "+payMoney(x.approved_amount)+" • Approved Days: "+esc(x.approved_credit_days)+" • Status: "+statusBadge(x.status)+"</div>";
+ html+="<div class='formactions' style='justify-content:flex-start'>";
+ if(x.status==="APPROVED") html+="<button class='btn primary' onclick='addInvoiceForm(""+x.id+"")'>＋ Add Invoice</button>";
+ if(x.status==="APPROVED"&&inv.length) html+="<button class='btn green' onclick='closeApprovedRequest(""+x.id+"")'>Close Request</button>";
+ if(x.status==="CLOSED"&&!x.receipt_update_open) html+="<button class='btn primary' onclick='reopenReceipt(""+x.id+"")'>Reopen for Receipt Update</button>";
+ if(x.status==="CLOSED"&&x.receipt_update_open) html+="<button class='btn green' onclick='closeReceiptUpdate(""+x.id+"")'>Close Receipt Update</button>";
+ html+="</div>";
+ html+="<h3 style='margin-top:22px'>Invoices & Receipts</h3>";
+ html+=inv.length?inv.map(i=>{
+  const rs=rec.filter(z=>z.invoice_id===i.id),received=rs.reduce((a,z)=>a+Number(z.received_amount||0),0),pending=Math.max(Number(i.invoice_amount)-received,0);
+  return "<div class='paycard' style='margin-bottom:12px'><div style='display:flex;justify-content:space-between;gap:10px'><strong>"+esc(i.invoice_no)+"</strong><span>"+payMoney(i.invoice_amount)+"</span></div><div class='muted' style='margin:6px 0'>Invoice: "+esc(i.invoice_date)+" • Due: "+esc(i.due_date||"-")+" • Pending: "+payMoney(pending)+"</div>"+(rs.length?"<table class='paytable'><thead><tr><th>Receipt</th><th>Date</th><th>Amount</th><th>Mode</th></tr></thead><tbody>"+rs.map(z=>"<tr><td>"+esc(z.receipt_no)+"</td><td>"+esc(z.receipt_date)+"</td><td>"+payMoney(z.received_amount)+"</td><td>"+esc(z.payment_mode||"-")+"</td></tr>").join("")+"</tbody></table>":"<div class='muted'>No receipts yet.</div>")+(pending>0&& (x.status==="APPROVED"||(x.status==="CLOSED"&&x.receipt_update_open))?"<button class='btn green' style='margin-top:10px' onclick='addReceiptForm(""+i.id+"",""+x.id+"")'>＋ Add Receipt</button>":"")+"</div>";
+ }).join(""):"<div class='empty'>No invoices added yet.</div>";
+ document.getElementById("paymentContent").innerHTML=html;
+ document.getElementById("paymentModal").style.display="block";
+}
+function addInvoiceForm(requestId){
+ document.getElementById("paymentContent").innerHTML="<h3>Add Invoice</h3><div class='formgrid'><div class='field'><label>Invoice Number *</label><input id='invNo'></div><div class='field'><label>Invoice Date *</label><input id='invDate' type='date' value='"+new Date().toISOString().slice(0,10)+"'></div><div class='field'><label>Due Date</label><input id='invDue' type='date'></div><div class='field'><label>Invoice Amount (₹) *</label><input id='invAmount' type='number' min='0.01' step='0.01'></div><div class='field full'><label>Remarks</label><textarea id='invRemarks'></textarea></div></div><div class='formactions'><button class='btn secondary' onclick='openPayment(""+requestId+"")'>Cancel</button><button class='btn primary' onclick='saveInvoice(""+requestId+"")'>Save Invoice</button></div>";
+}
+async function saveInvoice(requestId){
+ const no=document.getElementById("invNo").value.trim(),date=document.getElementById("invDate").value,due=document.getElementById("invDue").value||null,amount=Number(document.getElementById("invAmount").value),remarks=document.getElementById("invRemarks").value.trim()||null;
+ if(!no||!date||!Number.isFinite(amount)||amount<=0){alert("Enter invoice number, date and valid amount.");return;}
+ const r=await supabaseClient.rpc("credit_add_invoice",{p_request_id:requestId,p_invoice_no:no,p_invoice_date:date,p_due_date:due,p_invoice_amount:amount,p_remarks:remarks});
+ if(r.error){alert(r.error.message);return;}
+ await openPayment(requestId);await loadPaymentTracking();
+}
+function addReceiptForm(invoiceId,requestId){
+ document.getElementById("paymentContent").innerHTML="<h3>Add Receipt</h3><div class='formgrid'><div class='field'><label>Receipt Number *</label><input id='recNo'></div><div class='field'><label>Receipt Date *</label><input id='recDate' type='date' value='"+new Date().toISOString().slice(0,10)+"'></div><div class='field'><label>Received Amount (₹) *</label><input id='recAmount' type='number' min='0.01' step='0.01'></div><div class='field'><label>Payment Mode</label><input id='recMode' placeholder='NEFT / RTGS / Cheque / Cash'></div><div class='field full'><label>Remarks</label><textarea id='recRemarks'></textarea></div></div><div class='formactions'><button class='btn secondary' onclick='openPayment(""+requestId+"")'>Cancel</button><button class='btn green' onclick='saveReceipt(""+invoiceId+"",""+requestId+"")'>Save Receipt</button></div>";
+}
+async function saveReceipt(invoiceId,requestId){
+ const no=document.getElementById("recNo").value.trim(),date=document.getElementById("recDate").value,amount=Number(document.getElementById("recAmount").value),mode=document.getElementById("recMode").value.trim()||null,remarks=document.getElementById("recRemarks").value.trim()||null;
+ if(!no||!date||!Number.isFinite(amount)||amount<=0){alert("Enter receipt number, date and valid amount.");return;}
+ const r=await supabaseClient.rpc("credit_add_receipt",{p_invoice_id:invoiceId,p_receipt_no:no,p_receipt_date:date,p_received_amount:amount,p_payment_mode:mode,p_remarks:remarks});
+ if(r.error){alert(r.error.message);return;}
+ await openPayment(requestId);await loadPaymentTracking();
+}
+async function closeApprovedRequest(id){
+ const reason=confirm("Close this request now? It must have at least one invoice.");if(!reason)return;
+ const r=await supabaseClient.rpc("credit_close_request",{p_request_id:id});if(r.error){alert(r.error.message);return;}
+ await openPayment(id);await loadPaymentTracking();
+}
+async function reopenReceipt(id){
+ const reason=prompt("Reason for reopening for receipt update:");if(!reason||!reason.trim()){alert("Reason is mandatory.");return;}
+ const r=await supabaseClient.rpc("credit_reopen_for_receipt_update",{p_request_id:id,p_reason:reason.trim()});if(r.error){alert(r.error.message);return;}
+ await openPayment(id);await loadPaymentTracking();
+}
+async function closeReceiptUpdate(id){
+ const r=await supabaseClient.rpc("credit_close_after_receipt_update",{p_request_id:id});if(r.error){alert(r.error.message);return;}
+ await openPayment(id);await loadPaymentTracking();
+}
 function notificationStyle(type){
  const map={APPROVED:["#dcfce7","#166534"],REJECTED:["#fee2e2","#991b1b"],HOLD:["#fef3c7","#92400e"],REOPENED:["#eef2ff","#3730a3"],PAYMENT_UPDATE:["#e0f2fe","#075985"],CLOSURE:["#f3e8ff","#6b21a8"],SYSTEM:["#f3f4f6","#374151"]};
  return map[type]||["#eef2ff","#3730a3"];
