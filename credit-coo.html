@@ -101,7 +101,7 @@ async function loadAdminManagement(){
  document.getElementById("adminRows").innerHTML=(a.data||[]).map(x=>{
   const c=controls.find(y=>y.admin_user_id===x.id);
   const on=c?c.approval_enabled:true;
-  return "<tr><td><strong>"+esc(x.employee_name)+"</strong></td><td>"+esc(x.email)+"</td><td><span class='toggle "+(on?"on":"off")+"'>"+(on?"ENABLED":"DISABLED")+"</span></td><td><button class='toggle "+(on?"off":"on")+"' onclick='control(""+x.id+"",""+(on?"DISABLE_APPROVAL":"ENABLE_APPROVAL")+"")'>"+(on?"Disable":"Enable")+"</button></td></tr>";
+  return "<tr><td><strong>"+esc(x.employee_name)+"</strong></td><td>"+esc(x.email)+"</td><td><span class='toggle "+(on?"on":"off")+"'>"+(on?"ENABLED":"DISABLED")+"</span></td><td><button class='toggle "+(on?"off":"on")+"' onclick='control(\""+x.id+"\",\""+(on?"DISABLE_APPROVAL":"ENABLE_APPROVAL")+"\")'>"+(on?"Disable":"Enable")+"</button></td></tr>";
  }).join("")||"<tr><td colspan='4'>No admins created yet.</td></tr>";
 }
 async function loadRequestsPanel(){
