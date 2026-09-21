@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Krishna Credit Portal - Admin Registration</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#f4f7fb;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;color:#172033}.card{width:100%;max-width:460px;background:#fff;border-radius:18px;padding:30px;box-shadow:0 8px 30px #00000012}.brand{text-align:center;font-size:21px;font-weight:800;color:#14243a}.sub{text-align:center;color:#687386;font-size:13px;margin:7px 0 22px}.badge{background:#eef4ff;color:#1d4ed8;border-radius:10px;padding:13px;text-align:center;margin-bottom:20px;font-weight:700}.field{margin-top:15px}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}.field input{width:100%;padding:13px;border:1px solid #d6dce5;border-radius:9px;font-size:15px}.btn{width:100%;margin-top:22px;padding:14px;border:0;border-radius:9px;background:#2563eb;color:#fff;font-weight:800;font-size:15px;cursor:pointer}.btn:disabled{opacity:.6}.msg{display:none;margin-top:16px;padding:12px;border-radius:9px;font-size:13px}.error{display:block;background:#fee2e2;color:#991b1b}.success{display:block;background:#dcfce7;color:#166534}.info{display:block;background:#eef2ff;color:#3730a3}
+</style></head>
+<body><div class="card">
+<div class="brand">KRISHNA AUTOMOBILES</div><div class="sub">CREDIT PORTAL • ADMIN REGISTRATION</div>
+<div id="badge" class="badge">Validating invitation...</div>
+<form id="form" style="display:none">
+<div class="field"><label>Employee Name</label><input id="name" required></div>
+<div class="field"><label>Official Email ID</label><input id="email" type="email" required autocomplete="email"></div>
+<div class="field"><label>Create Password</label><input id="password" type="password" minlength="8" required autocomplete="new-password"></div>
+<div class="field"><label>Confirm Password</label><input id="confirm" type="password" minlength="8" required autocomplete="new-password"></div>
+<button class="btn" id="submit" type="submit">CREATE ADMIN ACCOUNT</button>
+</form><div id="msg" class="msg"></div>
+</div>
+<script>
+const U="https://vqcsxozodlduvzwqumoz.supabase.co",K="sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";const s=window.supabase.createClient(U,K);
+const token=new URLSearchParams(location.search).get("invite"),badge=document.getElementById("badge"),form=document.getElementById("form"),msg=document.getElementById("msg");
+function message(t,c){msg.textContent=t;msg.className="msg "+c}
+async function validate(){
+ if(!token){badge.textContent="Invalid invitation link";message("Invitation token is missing.","error");return}
+ const r=await s.rpc("credit_validate_admin_invite",{p_invite_token:token});
+ if(r.error){badge.textContent="Unable to validate invitation";message(r.error.message,"error");return}
+ if(!r.data||!r.data.length||r.data[0].valid!==true){badge.textContent="Invitation is invalid or expired";message("Please request a new Admin invitation from the COO.","error");return}
+ badge.textContent="✓ Admin invitation verified";form.style.display="block";
+}
+form.addEventListener("submit",async e=>{
+ e.preventDefault();const name=document.getElementById("name").value.trim(),email=document.getElementById("email").value.trim().toLowerCase(),pw=document.getElementById("password").value,cp=document.getElementById("confirm").value;
+ if(pw!==cp){message("Passwords do not match.","error");return}if(pw.length<8){message("Password must be at least 8 characters.","error");return}
+ const btn=document.getElementById("submit");btn.disabled=true;message("Creating your Admin account...","info");
+ try{
+  const r=await s.auth.signUp({email,password:pw,options:{data:{credit_admin_portal:"true",admin_invite_token:token,employee_name:name},emailRedirectTo:location.origin+"/credit-login.html"}});
+  if(r.error)throw r.error;
+  message("Admin account created successfully. Please confirm your email, then sign in through the Credit Portal.","success");
+  form.style.display="none";
+ }catch(e){message("Registration failed: "+e.message,"error");}finally{btn.disabled=false}
+});
+validate();
+</script></body></html>
