@@ -14,7 +14,7 @@ main{flex:1;padding:28px;max-width:1450px;margin:auto;width:100%}.title{margin-b
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.kpi{background:#fff;border:1px solid var(--line);border-radius:13px;padding:18px}.kpi .label{font-size:13px;color:var(--muted)}.kpi .num{font-size:26px;font-weight:800;margin-top:8px}.credit{border-left:4px solid var(--blue)}.received{border-left:4px solid var(--green)}.pending{border-left:4px solid var(--amber)}.month{border-left:4px solid #7c3aed}
 .analytics{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}.panel{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px}.panel h2{margin:0 0 16px;font-size:18px}.chart{height:260px;display:flex;align-items:flex-end;gap:8px;padding:15px 5px 30px;border-bottom:1px solid #cfd6df;position:relative}.bargrp{flex:1;height:100%;display:flex;align-items:flex-end;justify-content:center;gap:3px;min-width:24px}.bar{width:45%;min-height:2px;border-radius:4px 4px 0 0}.creditbar{background:#2563eb}.recvbar{background:#059669}.xlabel{position:absolute;bottom:0;font-size:10px;color:var(--muted);transform:translateX(-50%);white-space:nowrap}.legend{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-top:12px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}.dot.blue{background:#2563eb}.dot.green{background:#059669}
 .branchgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}.branchrow{margin:14px 0}.branchhead{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}.track{height:9px;background:#edf0f4;border-radius:8px;overflow:hidden;display:flex}.track .c{background:#2563eb}.track .r{background:#059669}.branchvalues{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
-.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:820px}th,td{text-align:left;padding:12px 9px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-size:12px;background:#fafbfc}.status{display:inline-block;padding:5px 9px;border-radius:20px;font-size:11px;font-weight:700}.SUBMITTED{background:#fff7ed;color:#b45309}.HOLD{background:#fef3c7;color:#92400e}.APPROVED{background:#ecfdf5;color:#047857}.REJECTED{background:#fef2f2;color:#b91c1c}.CLOSED{background:#eef2ff;color:#3730a3}.DRAFT{background:#f3f4f6;color:#4b5563}.view{background:#fff;border:1px solid #cbd5e1;border-radius:7px;padding:7px 11px;cursor:pointer;font-weight:700;color:#1d4ed8}.empty{text-align:center;color:var(--muted);padding:30px}.error{display:none;background:#fee2e2;color:#991b1b;padding:12px;border-radius:9px;margin-bottom:15px}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:820px}th,td{text-align:left;padding:12px 9px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-size:12px;background:#fafbfc}.status{display:inline-block;padding:5px 9px;border-radius:20px;font-size:11px;font-weight:700}.SUBMITTED{background:#fff7ed;color:#b45309}.HOLD{background:#fef3c7;color:#92400e}.APPROVED{background:#ecfdf5;color:#047857}.REJECTED{background:#fef2f2;color:#b91c1c}.CLOSED{background:#eef2ff;color:#3730a3}.DRAFT{background:#f3f4f6;color:#4b5563}.view{background:#fff;border:1px solid #cbd5e1;border-radius:7px;padding:7px 11px;cursor:pointer;font-weight:700;color:#1d4ed8}.empty{text-align:center;color:var(--muted);padding:30px}.modal{display:none;position:fixed;inset:0;background:#0008;z-index:20;padding:25px;overflow:auto}.modalbox{max-width:850px;margin:30px auto;background:#fff;border-radius:16px;padding:24px}.modalhead{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:15px}.modalhead h2{margin:0}.close{background:#e5e7eb;color:#374151;border:0;border-radius:8px;padding:9px 13px;cursor:pointer}.detailgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}.detail{background:#f8fafc;border-radius:10px;padding:13px}.detail label{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.detail strong{font-size:14px}.reviewbox{margin-top:18px;padding:16px;background:#f8fafc;border-radius:12px}.reviewbox input,.reviewbox textarea{width:100%;padding:11px;border:1px solid #d7dce5;border-radius:8px;font-size:14px;margin-top:6px}.reviewbox textarea{min-height:75px;resize:vertical}.reviewactions{display:flex;gap:10px;margin-top:15px}.approve{background:#059669;color:#fff}.hold{background:#d97706;color:#fff}.reject{background:#dc2626;color:#fff}.history{margin-top:20px}.historyitem{padding:11px 0;border-bottom:1px solid var(--line);font-size:13px}.error{display:none;background:#fee2e2;color:#991b1b;padding:12px;border-radius:9px;margin-bottom:15px}
 @media(max-width:1000px){aside{display:none}.analytics,.branchgrid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}@media(max-width:600px){main{padding:16px}.kpis{grid-template-columns:1fr}.filters{flex-wrap:wrap}.filters>*{flex:1;min-width:130px}}
 </style></head>
 <body>
@@ -38,6 +38,7 @@ main{flex:1;padding:28px;max-width:1450px;margin:auto;width:100%}.title{margin-b
 </div>
 <section class="panel"><h2>Credit Requests</h2><div class="tablewrap"><table><thead><tr><th>Request No.</th><th>Date</th><th>Branch</th><th>Customer</th><th>Credit Approved</th><th>Credit Days</th><th>Status</th><th>Action</th></tr></thead><tbody id="tbody"></tbody></table></div></section>
 </main></div>
+<div class="modal" id="reviewModal"><div class="modalbox"><div class="modalhead"><h2 id="reviewTitle">Credit Request Review</h2><button class="close" onclick="closeReview()">✕ Close</button></div><div id="reviewContent"></div></div></div>
 <script>
 const U="https://vqcsxozodlduvzwqumoz.supabase.co",K="sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";const s=window.supabase.createClient(U,K);
 let requests=[],branches={},invoices=[],receipts=[],currentFilter={};
@@ -94,7 +95,51 @@ function renderBranches(){
  document.getElementById("branchChart").innerHTML=data.map(x=>"<div class='branchrow'><div class='branchhead'><strong>"+x.name+"</strong><span>"+money(x.credit)+" / "+money(x.received)+"</span></div><div class='track'><span class='c' style='width:"+x.credit/max*100+"%'></span><span class='r' style='width:"+x.received/max*100+"%'></span></div><div class='branchvalues'><span>Credit approved</span><span>Received</span></div></div>").join("")||"<div class='empty'>No branch data.</div>";
  document.getElementById("branchTable").innerHTML="<table><thead><tr><th>Branch</th><th>Credit</th><th>Received</th><th>Gap</th></tr></thead><tbody>"+data.map(x=>"<tr><td><strong>"+x.name+"</strong></td><td>"+money(x.credit)+"</td><td>"+money(x.received)+"</td><td>"+money(Math.max(x.credit-x.received,0))+"</td></tr>").join("")+"</tbody></table>"
 }
-function renderRequests(){document.getElementById("tbody").innerHTML=requests.length?requests.slice(0,100).map(x=>"<tr><td><strong>"+x.request_no+"</strong></td><td>"+new Date(x.created_at).toLocaleDateString("en-IN")+"</td><td>"+(branches[x.branch_id]?.branch_name||"-")+"</td><td>"+x.customer_name+"</td><td>"+money(x.approved_amount||0)+"</td><td>"+(x.approved_credit_days??x.requested_credit_days)+"</td><td><span class='status "+x.status+"'>"+x.status+"</span></td><td><button class='view' onclick='alert("Review screen will be connected to this request next.")'>View</button></td></tr>").join(""):"<tr><td colspan='8' class='empty'>No credit requests found.</td></tr>"}
+function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function renderRequests(){document.getElementById("tbody").innerHTML=requests.length?requests.slice(0,100).map(x=>"<tr><td><strong>"+esc(x.request_no)+"</strong></td><td>"+new Date(x.created_at).toLocaleDateString("en-IN")+"</td><td>"+esc(branches[x.branch_id]?.branch_name||"-")+"</td><td>"+esc(x.customer_name)+"</td><td>"+money(x.approved_amount||0)+"</td><td>"+(x.approved_credit_days??x.requested_credit_days)+"</td><td><span class='status "+x.status+"'>"+x.status+"</span></td><td><button class='view' onclick='openReview(\""+x.id+"\")'>View</button></td></tr>").join(""):"<tr><td colspan='8' class='empty'>No credit requests found.</td></tr>"}
+async function openReview(id){
+ const r=await s.from("credit_requests").select("id,request_no,branch_id,customer_code,customer_name,requested_amount,requested_credit_days,purpose,remarks,status,created_at,submitted_at,approved_amount,approved_credit_days,approval_remarks,decision_reason,decision_at").eq("id",id).maybeSingle();
+ if(r.error||!r.data){alert("Request could not be loaded.");return}
+ const x=r.data;
+ const h=await s.from("credit_approval_history").select("action,remarks,reason,approved_amount,approved_credit_days,created_at").eq("request_id",id).order("created_at",{ascending:true});
+ const history=h.data||[];
+ document.getElementById("reviewTitle").textContent=x.request_no+" • Credit Review";
+ let html="<div class='detailgrid'>"+
+ "<div class='detail'><label>Branch</label><strong>"+esc(branches[x.branch_id]?.branch_name||"-")+"</strong></div>"+
+ "<div class='detail'><label>Customer Code</label><strong>"+esc(x.customer_code||"-")+"</strong></div>"+
+ "<div class='detail'><label>Customer</label><strong>"+esc(x.customer_name)+"</strong></div>"+
+ "<div class='detail'><label>Requested Amount</label><strong>"+money(x.requested_amount)+"</strong></div>"+
+ "<div class='detail'><label>Requested Credit Days</label><strong>"+esc(x.requested_credit_days)+" days</strong></div>"+
+ "<div class='detail'><label>Status</label><strong>"+esc(x.status)+"</strong></div>"+
+ "<div class='detail' style='grid-column:1/-1'><label>Purpose</label><strong>"+esc(x.purpose)+"</strong></div>"+
+ "<div class='detail' style='grid-column:1/-1'><label>Remarks</label><strong>"+esc(x.remarks||"-")+"</strong></div></div>";
+ if(x.status==="SUBMITTED"||x.status==="HOLD"){
+  html+="<div class='reviewbox'><strong>Decision</strong><div class='detailgrid'>"+
+  "<div><label>Approved Amount</label><input id='reviewAmount' type='number' min='0.01' step='0.01' value='"+(x.approved_amount||x.requested_amount)+"'></div>"+
+  "<div><label>Approved Credit Days</label><input id='reviewDays' type='number' min='0' step='1' value='"+(x.approved_credit_days??x.requested_credit_days)+"'></div>"+
+  "<div style='grid-column:1/-1'><label>Approval Remarks</label><textarea id='reviewRemarks' placeholder='Optional for approval; mandatory reason for Hold/Reject'></textarea></div></div>"+
+  "<div class='reviewactions'><button class='btn approve' onclick='decideRequest(\""+x.id+"\",\"APPROVE\")'>Approve</button><button class='btn hold' onclick='decideRequest(\""+x.id+"\",\"HOLD\")'>Hold</button><button class='btn reject' onclick='decideRequest(\""+x.id+"\",\"REJECT\")'>Reject</button></div></div>";
+ }else{
+  html+="<div class='reviewbox'><strong>Decision completed</strong><p style='color:var(--muted)'>This request is already "+esc(x.status)+". Another admin cannot make a second decision.</p></div>";
+ }
+ html+="<div class='history'><h3>Approval History</h3>"+(history.length?history.map(y=>"<div class='historyitem'><strong>"+esc(y.action)+"</strong> • "+new Date(y.created_at).toLocaleString("en-IN")+(y.reason?"<br>Reason: "+esc(y.reason):"")+(y.remarks?"<br>Remarks: "+esc(y.remarks):"")+(y.approved_amount!=null?"<br>Approved: "+money(y.approved_amount):"")+"</div>").join(""):"<div class='empty'>No history.</div>")+"</div>";
+ document.getElementById("reviewContent").innerHTML=html;document.getElementById("reviewModal").style.display="block";
+}
+function closeReview(){document.getElementById("reviewModal").style.display="none";}
+async function decideRequest(id,action){
+ let result;
+ if(action==="APPROVE"){
+  const amount=Number(document.getElementById("reviewAmount").value),days=Number(document.getElementById("reviewDays").value),remarks=document.getElementById("reviewRemarks").value.trim();
+  if(!Number.isFinite(amount)||amount<=0||!Number.isInteger(days)||days<0){alert("Enter valid approved amount and credit days.");return}
+  result=await s.rpc("credit_approve_request",{p_request_id:id,p_approved_amount:amount,p_approved_credit_days:days,p_remarks:remarks||null});
+ }else{
+  const reason=document.getElementById("reviewRemarks").value.trim();
+  if(!reason){alert("Reason is mandatory for Hold/Reject.");return}
+  result=await s.rpc(action==="HOLD"?"credit_hold_request":"credit_reject_request",{p_request_id:id,p_reason:reason});
+ }
+ if(result.error){alert(result.error.message);return}
+ closeReview();await loadAll();
+}
 document.getElementById("logout").onclick=async()=>{await s.auth.signOut();location.href="credit-login.html"};
 (async()=>{if(await auth()){await loadBranches();await loadAll()}})();
 </script></body></html>
