@@ -49,6 +49,12 @@
 <div class="field"><label>Employee</label><input id="employeeField" class="readonly" readonly></div>
 <div class="field"><label>Customer Code</label><input id="customerCode" maxlength="100" placeholder="Enter customer code"></div>
 <div class="field"><label>Customer Name <span class="required">*</span></label><input id="customerName" maxlength="200" required placeholder="Enter customer name"></div>
+<div class="field full">
+<div style="padding:14px;background:#f8fafc;border:1px solid var(--border);border-radius:10px">
+<div style="font-weight:800;margin-bottom:8px">Customer Credit Status</div>
+<div id="customerStatus" style="color:var(--muted);font-size:13px">Enter Customer Code and Customer Name. Customer Master details will be linked automatically when the request is saved.</div>
+</div>
+</div>
 <div class="field"><label>Requested Credit Amount (₹) <span class="required">*</span></label><input id="amount" type="number" min="0.01" step="0.01" required placeholder="0.00"></div>
 <div class="field"><label>Requested Credit Days <span class="required">*</span></label><input id="days" type="number" min="0" step="1" required placeholder="0"></div>
 <div class="field full"><label>Purpose <span class="required">*</span></label><textarea id="purpose" maxlength="1000" required placeholder="Why is credit required?"></textarea></div>
@@ -89,6 +95,7 @@ function newRequest(){
  document.getElementById("formPanel").scrollIntoView({behavior:"smooth",block:"start"});
  document.getElementById("formNotice").style.display="none";
  document.getElementById("requestForm").reset();
+ document.getElementById("customerStatus").innerHTML="Enter Customer Code and Customer Name. Customer Master details will be linked automatically when the request is saved.";
  document.getElementById("branchField").value=branchInfo?branchInfo.branch_name+" • "+branchInfo.branch_code:"";
  document.getElementById("employeeField").value=profile?profile.employee_name:"";
 }
@@ -175,19 +182,30 @@ async function markAllRead(){
 async function saveRequest(mode){
  if(!profile||!profile.branch_id){showNotice("Your branch is not configured. Please contact the COO.","error");return;}
  const customerName=document.getElementById("customerName").value.trim();
- const customerCode=document.getElementById("customerCode").value.trim()||null;
+ const customerCode=document.getElementById("customerCode").value.trim();
  const amount=Number(document.getElementById("amount").value);
  const days=Number(document.getElementById("days").value);
  const purpose=document.getElementById("purpose").value.trim();
  const remarks=document.getElementById("remarks").value.trim()||null;
- if(!customerName||!Number.isFinite(amount)||amount<=0||!Number.isInteger(days)||days<0||!purpose){
-  showNotice("Please complete all required fields correctly.","error");return;
+ if(!customerCode||!customerName||!Number.isFinite(amount)||amount<=0||!Number.isInteger(days)||days<0||!purpose){
+  showNotice("Please complete Customer Code, Customer Name and all required fields correctly.","error");return;
  }
  const draft=document.getElementById("draftBtn"),submit=document.getElementById("submitBtn");
  draft.disabled=true;submit.disabled=true;showNotice(mode==="DRAFT"?"Saving draft...":"Submitting for approval...","success");
  try{
+  const customer=await supabaseClient.rpc("credit_create_or_get_customer",{
+   p_customer_code:customerCode,
+   p_customer_name:customerName,
+   p_branch_id:profile.branch_id
+  });
+  if(customer.error)throw customer.error;
+  if(!customer.data)throw new Error("Unable to create or find customer.");
+
   const ins=await supabaseClient.from("credit_requests").insert({
-   branch_id:profile.branch_id,created_by:profile.id,customer_code:customerCode,customer_name:customerName,
+   branch_id:profile.branch_id,created_by:profile.id,
+   customer_id:customer.data.id,
+   customer_code:customer.data.customer_code,
+   customer_name:customer.data.customer_name,
    requested_amount:amount,requested_credit_days:days,purpose,remarks,status:"DRAFT"
   }).select("id,request_no").single();
   if(ins.error)throw ins.error;
@@ -199,6 +217,7 @@ async function saveRequest(mode){
    showNotice("Request "+ins.data.request_no+" saved as Draft.","success");
   }
   document.getElementById("requestForm").reset();
+  document.getElementById("customerStatus").innerHTML="Enter Customer Code and Customer Name. Customer Master details will be linked automatically when the request is saved.";
   document.getElementById("branchField").value=branchInfo?branchInfo.branch_name+" • "+branchInfo.branch_code:"";
   document.getElementById("employeeField").value=profile.employee_name;
   await loadRequests();
