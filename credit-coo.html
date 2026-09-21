@@ -166,6 +166,7 @@ async function loadAuditLog(){
 function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 function msg(id,t){const e=document.getElementById(id);e.textContent=t;e.style.display="block"}
 async function load(){const {data:{user}}=await s.auth.getUser();if(!user){location.href="credit-login.html";return}const p=await s.from("credit_users").select("employee_name,email,role,is_active").eq("id",user.id).maybeSingle();if(p.error||!p.data||p.data.role!=="COO"||!p.data.is_active){await s.auth.signOut();location.href="credit-login.html";return}document.getElementById("user").textContent=p.data.employee_name+" • COO";
+}
 await loadAuditLog();
 await loadAdminManagement();
 await loadRequestsPanel();
