@@ -14,6 +14,7 @@
 <section class="panel"><h2>Admin Registration Link</h2><div class="muted">Generate a separate single-use invitation for Admin 1 or Admin 2. Each administrator creates their own password.</div><div id="linkArea" class="linkbox" style="display:none"><input id="inviteLink" readonly><button class="btn primary" onclick="copyLink()">Copy Link</button></div><div id="linkMsg" class="success"></div><div id="linkError" class="error"></div></section>
 <section class="panel"><h2>Admin Approval Control</h2><div style="overflow:auto"><table><thead><tr><th>Admin</th><th>Email</th><th>Approval Rights</th><th>Action</th></tr></thead><tbody id="adminRows"></tbody></table></div></section>
 <section class="panel"><h2>Approval Requests</h2><div id="requests" class="muted">Loading...</div></section>
+<section class="panel"><h2>Admin Control Audit Log</h2><p class="muted">History of administrator activation, blocking and approval-right changes.</p><div style="overflow:auto"><table><thead><tr><th>Date</th><th>Admin</th><th>Action</th><th>Reason</th><th>Changed By</th></tr></thead><tbody id="auditRows"><tr><td colspan="5" class="muted">Loading...</td></tr></tbody></table></div></section>
 </div>
 
 <section class="panel" id="paymentSection" style="display:none">
@@ -72,9 +73,41 @@ async function loadCooPayments(){
  document.getElementById("cooPending").textContent=money(pending);
  document.getElementById("cooPaymentRows").innerHTML=rows.filter(x=>Number(x.invoice_count)>0).map(x=>"<tr><td><strong>"+esc(x.request_no)+"</strong></td><td>"+esc(x.customer_name)+"<br><small>"+esc(x.customer_code||"")+"</small></td><td>"+esc(bm[x.branch_id]||"")+"</td><td>"+x.invoice_count+"</td><td>"+money(x.total_invoiced)+"</td><td>"+money(x.total_received)+"</td><td>"+money(x.total_pending)+"</td><td>"+esc(x.status)+"</td></tr>").join("")||"<tr><td colspan='8'>No invoice records found.</td></tr>";
 }
+async function loadAuditLog(){
+ const r=await s.from("credit_user_audit")
+   .select("target_user_id,action,reason,action_by,created_at")
+   .order("created_at",{ascending:false})
+   .limit(100);
+
+ if(r.error){
+  document.getElementById("auditRows").innerHTML="<tr><td colspan='5'>"+esc(r.error.message)+"</td></tr>";
+  return;
+ }
+
+ const rows=r.data||[];
+ const ids=[...new Set(rows.flatMap(x=>[x.target_user_id,x.action_by]).filter(Boolean))];
+ let names={};
+
+ if(ids.length){
+  const u=await s.from("credit_users").select("id,employee_name,email").in("id",ids);
+  if(!u.error)(u.data||[]).forEach(x=>names[x.id]=x.employee_name||x.email);
+ }
+
+ document.getElementById("auditRows").innerHTML=rows.length
+  ? rows.map(x=>"<tr>"+
+    "<td>"+new Date(x.created_at).toLocaleString("en-IN")+"</td>"+
+    "<td>"+esc(names[x.target_user_id]||"-")+"</td>"+
+    "<td><strong>"+esc(x.action)+"</strong></td>"+
+    "<td>"+esc(x.reason||"-")+"</td>"+
+    "<td>"+esc(names[x.action_by]||"-")+"</td>"+
+    "</tr>").join("")
+  : "<tr><td colspan='5' class='muted'>No audit records yet.</td></tr>";
+}
+
 function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 function msg(id,t){const e=document.getElementById(id);e.textContent=t;e.style.display="block"}
 async function load(){const {data:{user}}=await s.auth.getUser();if(!user){location.href="credit-login.html";return}const p=await s.from("credit_users").select("employee_name,email,role,is_active").eq("id",user.id).maybeSingle();if(p.error||!p.data||p.data.role!=="COO"||!p.data.is_active){await s.auth.signOut();location.href="credit-login.html";return}document.getElementById("user").textContent=p.data.employee_name+" • COO";
+await loadAuditLog();
 const a=await s.from("credit_users").select("id,employee_name,email,is_active").eq("role","ADMIN").order("employee_name");const ids=(a.data||[]).map(x=>x.id);let controls=[];if(ids.length){const c=await s.from("credit_admin_controls").select("admin_user_id,approval_enabled").in("admin_user_id",ids);controls=c.data||[]}document.getElementById("admins").textContent=(a.data||[]).filter(x=>x.is_active).length;document.getElementById("adminRows").innerHTML=(a.data||[]).map(x=>{const c=controls.find(y=>y.admin_user_id===x.id);const on=c?c.approval_enabled:true;return "<tr><td><strong>"+x.employee_name+"</strong></td><td>"+x.email+"</td><td><span class='toggle "+(on?"on":"off")+"'>"+(on?"ENABLED":"DISABLED")+"</span></td><td><button class='toggle "+(on?"off":"on")+"' onclick='control(""+x.id+"",""+(on?"DISABLE_APPROVAL":"ENABLE_APPROVAL")+"")'>"+(on?"Disable":"Enable")+"</button></td></tr>"}).join("")||"<tr><td colspan='4'>No admins created yet.</td></tr>";
 const r=await s.from("credit_requests").select("request_no,customer_name,requested_amount,status,created_at").order("created_at",{ascending:false});const rows=r.data||[];document.getElementById("total").textContent=rows.length;document.getElementById("pending").textContent=rows.filter(x=>x.status==="SUBMITTED"||x.status==="HOLD").length;document.getElementById("requests").innerHTML=rows.slice(0,8).map(x=>"<div style='padding:10px 0;border-bottom:1px solid #eee'><strong>"+x.request_no+"</strong> — "+x.customer_name+" — ₹"+Number(x.requested_amount).toLocaleString("en-IN")+" — "+x.status+"</div>").join("")||"No requests yet."}
 async function loadCustomers(){
