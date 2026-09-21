@@ -37,7 +37,7 @@ main{flex:1;padding:28px;max-width:1450px;margin:auto;width:100%}.title{margin-b
 <section class="panel"><h2>Branch-wise Summary</h2><div id="branchTable" class="tablewrap"></div></section>
 </div>
 <section class="panel" id="paymentPanel" style="display:none"><h2>Payment Tracking</h2><p style="color:var(--muted);font-size:13px">Invoice-wise collections and pending amounts across branches.</p><div class="tablewrap"><table><thead><tr><th>Request</th><th>Branch</th><th>Customer</th><th>Invoices</th><th>Invoiced</th><th>Received</th><th>Pending</th><th>Status</th></tr></thead><tbody id="paymentBody"></tbody></table></div></section>
-<section class="panel"><h2>Credit Requests</h2><div class="tablewrap"><table><thead><tr><th>Request No.</th><th>Date</th><th>Branch</th><th>Customer</th><th>Credit Approved</th><th>Credit Days</th><th>Status</th><th>Action</th></tr></thead><tbody id="tbody"></tbody></table></div></section>
+<section class="panel"><h2>Credit Requests</h2><div class="tablewrap"><table><thead><tr><th>Request No.</th><th>Date</th><th>Branch</th><th>Customer</th><th>Credit Approved</th><th>Credit Days</th><th>Status</th><th>Approval Age</th><th>Action</th></tr></thead><tbody id="tbody"></tbody></table></div></section>
 </main></div>
 <div class="modal" id="reviewModal"><div class="modalbox"><div class="modalhead"><h2 id="reviewTitle">Credit Request Review</h2><button class="close" onclick="closeReview()">✕ Close</button></div><div id="reviewContent"></div></div></div>
 <script>
@@ -112,7 +112,15 @@ function renderPayments(){
  }).filter(x=>x.invCount>0).sort((a,b)=>b.pending-a.pending);
  document.getElementById("paymentBody").innerHTML=rows.length?rows.map(x=>"<tr><td><strong>"+esc(x.request_no)+"</strong></td><td>"+esc(branches[x.branch_id]?.branch_name||"-")+"</td><td>"+esc(x.customer_name)+"</td><td>"+x.invCount+"</td><td>"+money(x.invoiced)+"</td><td>"+money(x.received)+"</td><td>"+money(x.pending)+"</td><td><span class='status "+x.status+"'>"+x.status+"</span></td></tr>").join(""):"<tr><td colspan='8' class='empty'>No invoices recorded.</td></tr>";
 }
-function renderRequests(){document.getElementById("tbody").innerHTML=requests.length?requests.slice(0,100).map(x=>"<tr><td><strong>"+esc(x.request_no)+"</strong></td><td>"+new Date(x.created_at).toLocaleDateString("en-IN")+"</td><td>"+esc(branches[x.branch_id]?.branch_name||"-")+"</td><td>"+esc(x.customer_name)+"</td><td>"+money(x.approved_amount||0)+"</td><td>"+(x.approved_credit_days??x.requested_credit_days)+"</td><td><span class='status "+x.status+"'>"+x.status+"</span></td><td><button class='view' onclick='openReview(\""+x.id+"\")'>View</button></td></tr>").join(""):"<tr><td colspan='8' class='empty'>No credit requests found.</td></tr>"}
+function approvalAge(x){
+ if(x.status!=="SUBMITTED"&&x.status!=="HOLD")return "-";
+ const start=new Date(x.submitted_at||x.created_at);
+ const mins=Math.max(0,Math.floor((Date.now()-start.getTime())/60000));
+ const days=Math.floor(mins/1440),hours=Math.floor((mins%1440)/60);
+ return days+"d "+hours+"h";
+}
+function renderRequests(){document.getElementById("tbody").innerHTML=requests.length?requests.slice(0,100).map(x=>"<tr><td><strong>"+esc(x.request_no)+"</strong></td><td>"+new Date(x.created_at).toLocaleDateString("en-IN")+"</td><td>"+esc(branches[x.branch_id]?.branch_name||"-")+"</td><td>"+esc(x.customer_name)+"</td><td>"+money(x.approved_amount||0)+"</td><td>"+(x.approved_credit_days??x.requested_credit_days)+"</td><td><span class='status "+x.status+"'>"+x.status+"</span></td><td>"+approvalAge(x)+"</td><td><button class='view' onclick='openReview(\""+x.id+"\")'>View</button></td></tr>").join(""):"<tr><td colspan='9' class='empty'>No credit requests found.</td></tr>"}
+
 async function loadAdminDocuments(requestId){
  const box=document.getElementById("adminDocumentList");
  if(!box)return;
