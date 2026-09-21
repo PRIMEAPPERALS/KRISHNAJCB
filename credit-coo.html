@@ -99,10 +99,13 @@ async function loadAdminManagement(){
  }
  document.getElementById("admins").textContent=(a.data||[]).filter(x=>x.is_active).length;
  document.getElementById("adminRows").innerHTML=(a.data||[]).map(x=>{
-  const c=controls.find(y=>y.admin_user_id===x.id);
-  const on=c?c.approval_enabled:true;
-  return "<tr><td><strong>"+esc(x.employee_name)+"</strong></td><td>"+esc(x.email)+"</td><td><span class='toggle "+(on?"on":"off")+"'>"+(on?"ENABLED":"DISABLED")+"</span></td><td><button class='toggle "+(on?"off":"on")+"' onclick='control(\""+x.id+"\",\""+(on?"DISABLE_APPROVAL":"ENABLE_APPROVAL")+"\")'>"+(on?"Disable":"Enable")+"</button></td></tr>";
+  const control=controls.find(y=>y.admin_user_id===x.id);
+  const enabled=control?control.approval_enabled:true;
+  return "<tr><td><strong>"+esc(x.employee_name)+"</strong></td><td>"+esc(x.email)+"</td><td>"+(enabled?"ENABLED":"DISABLED")+"</td><td><button class='toggle' data-admin='"+x.id+"' data-action='"+(enabled?"DISABLE_APPROVAL":"ENABLE_APPROVAL")+"'>"+(enabled?"Disable":"Enable")+"</button></td></tr>";
  }).join("")||"<tr><td colspan='4'>No admins created yet.</td></tr>";
+ document.querySelectorAll("#adminRows button[data-admin]").forEach(btn=>{
+  btn.onclick=()=>control(btn.dataset.admin,btn.dataset.action);
+ });
 }
 async function loadRequestsPanel(){
  const r=await s.from("credit_requests").select("request_no,customer_name,requested_amount,status,created_at,submitted_at").order("created_at",{ascending:false});
