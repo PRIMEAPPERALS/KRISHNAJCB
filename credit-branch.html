@@ -61,6 +61,14 @@
 </form>
 </section>
 
+<section class="panel" id="myRequestsPanel" style="display:none">
+<div class="panelhead"><h2>My Requests</h2><button class="btn secondary" onclick="closeMyRequests()">✕ Close</button></div>
+<div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:10px;border-bottom:1px solid var(--border)">Request</th><th style="text-align:left;padding:10px;border-bottom:1px solid var(--border)">Customer</th><th style="text-align:left;padding:10px;border-bottom:1px solid var(--border)">Amount</th><th style="text-align:left;padding:10px;border-bottom:1px solid var(--border)">Status</th><th style="padding:10px;border-bottom:1px solid var(--border)"></th></tr></thead><tbody id="myRequestsBody"></tbody></table></div>
+</section>
+<section class="panel" id="requestDetailsPanel" style="display:none">
+<div class="panelhead"><h2 id="detailsTitle">Request Details</h2><button class="btn secondary" onclick="closeDetails()">✕ Close</button></div>
+<div id="detailsContent"></div>
+</section>
 <section class="panel"><div class="panelhead"><h2>Recent Requests</h2></div><div id="recent" class="empty">No requests yet.</div></section>
 <section class="bottom"><span id="email"></span><button class="btn logout" id="logout">Logout</button></section>
 </main>
@@ -80,7 +88,50 @@ function newRequest(){
  document.getElementById("employeeField").value=profile?profile.employee_name:"";
 }
 function closeForm(){document.getElementById("formPanel").style.display="none";}
-function myRequests(){alert("My Requests screen will be added next.");}
+async function myRequests(){
+ document.getElementById("myRequestsPanel").style.display="block";
+ document.getElementById("myRequestsPanel").scrollIntoView({behavior:"smooth",block:"start"});
+ await renderMyRequests();
+}
+function closeMyRequests(){document.getElementById("myRequestsPanel").style.display="none";}
+function closeDetails(){document.getElementById("requestDetailsPanel").style.display="none";}
+function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function money(v){return "₹ "+Number(v||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function statusBadge(st){return "<span style='display:inline-block;padding:5px 9px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;font-weight:700'>"+esc(st)+"</span>";}
+async function renderMyRequests(){
+ const r=await supabaseClient.from("credit_requests").select("id,request_no,customer_name,requested_amount,status,created_at,submitted_at,approved_amount,approved_credit_days,approval_remarks,decision_reason").eq("branch_id",profile.branch_id).order("created_at",{ascending:false});
+ if(r.error){alert("Unable to load requests: "+r.error.message);return;}
+ const rows=r.data||[],body=document.getElementById("myRequestsBody");
+ if(!rows.length){body.innerHTML="<tr><td colspan='5' class='empty'>No requests yet.</td></tr>";return;}
+ body.innerHTML=rows.map(x=>"<tr><td style='padding:11px 10px;border-bottom:1px solid var(--border)'><strong>"+esc(x.request_no)+"</strong><br><small>"+new Date(x.created_at).toLocaleDateString("en-IN")+"</small></td><td style='padding:11px 10px;border-bottom:1px solid var(--border)'>"+esc(x.customer_name)+"</td><td style='padding:11px 10px;border-bottom:1px solid var(--border)'>"+money(x.requested_amount)+"</td><td style='padding:11px 10px;border-bottom:1px solid var(--border)'>"+statusBadge(x.status)+"</td><td style='padding:11px 10px;border-bottom:1px solid var(--border)'><button class='btn primary' onclick='viewRequest(""+x.id+"")'>View</button></td></tr>").join("");
+}
+async function viewRequest(id){
+ const r=await supabaseClient.from("credit_requests").select("id,request_no,customer_code,customer_name,requested_amount,requested_credit_days,purpose,remarks,status,created_at,submitted_at,approved_amount,approved_credit_days,approval_remarks,decision_reason,decision_at,closed_at,reopened_at,reopen_reason,receipt_update_open").eq("id",id).eq("branch_id",profile.branch_id).maybeSingle();
+ if(r.error||!r.data){alert("Request not found.");return;}
+ const x=r.data;
+ const h=await supabaseClient.from("credit_approval_history").select("action,remarks,reason,approved_amount,approved_credit_days,created_at").eq("request_id",id).order("created_at",{ascending:true});
+ const history=h.data||[];
+ document.getElementById("detailsTitle").textContent=x.request_no+" • Request Details";
+ document.getElementById("detailsContent").innerHTML=
+ "<div class='formgrid' style='margin-top:15px'>"+
+ "<div class='field'><label>Customer Code</label><input class='readonly' readonly value='"+esc(x.customer_code||"")+"'></div>"+
+ "<div class='field'><label>Customer Name</label><input class='readonly' readonly value='"+esc(x.customer_name)+"'></div>"+
+ "<div class='field'><label>Requested Amount</label><input class='readonly' readonly value='"+money(x.requested_amount)+"'></div>"+
+ "<div class='field'><label>Requested Credit Days</label><input class='readonly' readonly value='"+esc(x.requested_credit_days)+" days'></div>"+
+ "<div class='field full'><label>Purpose</label><textarea class='readonly' readonly>"+esc(x.purpose)+"</textarea></div>"+
+ "<div class='field full'><label>Remarks</label><textarea class='readonly' readonly>"+esc(x.remarks||"")+"</textarea></div>"+
+ "</div>"+
+ "<div style='margin-top:12px;padding:15px;background:#f8fafc;border-radius:10px'><strong>Status:</strong> "+statusBadge(x.status)+
+ (x.approved_amount!=null?"<br><br><strong>Approved Amount:</strong> "+money(x.approved_amount):"")+
+ (x.approved_credit_days!=null?"<br><strong>Approved Credit Days:</strong> "+esc(x.approved_credit_days)+" days":"")+
+ (x.approval_remarks?"<br><strong>Approval Remarks:</strong> "+esc(x.approval_remarks):"")+
+ (x.decision_reason?"<br><strong>Decision/Hold Reason:</strong> "+esc(x.decision_reason):"")+
+ "</div>"+
+ "<h3 style='margin-top:22px'>Request Timeline</h3>"+
+ (history.length?history.map(y=>"<div style='padding:12px 0;border-bottom:1px solid var(--border)'><strong>"+esc(y.action)+"</strong><br><small>"+new Date(y.created_at).toLocaleString("en-IN")+"</small>"+(y.reason?"<br>Reason: "+esc(y.reason):"")+(y.remarks?"<br>Remarks: "+esc(y.remarks):"")+(y.approved_amount!=null?"<br>Approved: "+money(y.approved_amount):"")+"</div>").join(""):"<div class='empty'>No history available.</div>");
+ document.getElementById("requestDetailsPanel").style.display="block";
+ document.getElementById("requestDetailsPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
 function notifications(){alert("Notifications screen will be added next.");}
 
 async function saveRequest(mode){
