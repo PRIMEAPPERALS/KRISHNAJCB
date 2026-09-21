@@ -6,15 +6,24 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--text)}header{height:72px;background:var(--navy);color:#fff;padding:0 28px;display:flex;justify-content:space-between;align-items:center}.brand{font-size:20px;font-weight:800}.brand small{display:block;font-size:11px;opacity:.7;margin-top:3px}.user{font-size:13px}.layout{display:flex;min-height:calc(100vh - 72px)}aside{width:235px;background:#17283f;color:#fff;padding:22px 14px}.nav{padding:13px 14px;border-radius:9px;margin-bottom:5px;color:#dbe4f0;font-size:14px}.active{background:var(--blue);color:#fff;font-weight:700}.logout{margin-top:25px;cursor:pointer}main{flex:1;padding:28px;max-width:1250px}.title{display:flex;justify-content:space-between;align-items:center;gap:15px}.title h1{margin:0;font-size:27px}.title p{color:var(--muted)}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin:22px 0}.card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px}.num{font-size:28px;font-weight:800;margin-top:8px}.muted{color:var(--muted);font-size:13px}.panel{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px;margin-bottom:18px}.panel h2{margin:0 0 15px;font-size:18px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px 9px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-size:12px}.toggle,.btn{padding:8px 12px;border:0;border-radius:8px;font-weight:700;cursor:pointer}.on{background:#dcfce7;color:#166534}.off{background:#fee2e2;color:#991b1b}.primary{background:var(--blue);color:#fff}.linkbox{display:flex;gap:8px;margin-top:15px}.linkbox input{flex:1;padding:11px;border:1px solid #d6dce5;border-radius:8px;font-size:13px}.success{display:none;margin-top:12px;background:#dcfce7;color:#166534;padding:11px;border-radius:8px;font-size:13px}.error{display:none;margin-top:12px;background:#fee2e2;color:#991b1b;padding:11px;border-radius:8px;font-size:13px}@media(max-width:750px){aside{display:none}.cards{grid-template-columns:1fr 1fr}main{padding:18px}.title{display:block}}@media(max-width:500px){.cards{grid-template-columns:1fr}}
 </style></head><body>
 <header><div class="brand">KRISHNA AUTOMOBILES<small>CREDIT PORTAL • COO CONTROL</small></div><div class="user" id="user">COO</div></header>
-<div class="layout"><aside><div class="nav active" onclick="showSection('dashboard')">▦ Dashboard</div><div class="nav" onclick="showSection('requests')">▣ Credit Requests</div><div class="nav" onclick="showSection('customers')">◉ Customer Master</div><div class="nav" onclick="showSection('payments')">₹ Payment Tracking</div><div class="nav">♙ Admin Management</div><div class="nav">▤ Audit Log</div><div class="nav logout" id="logout">↪ Logout</div></aside>
+<div class="layout"><aside>
+<div class="nav active" data-section="dashboard" onclick="showSection('dashboard')">▦ Dashboard</div>
+<div class="nav" data-section="requests" onclick="showSection('requests')">▣ Credit Requests</div>
+<div class="nav" data-section="customers" onclick="showSection('customers')">◉ Customer Master</div>
+<div class="nav" data-section="payments" onclick="showSection('payments')">₹ Payment Tracking</div>
+<div class="nav" data-section="admin" onclick="showSection('admin')">♙ Admin Management</div>
+<div class="nav" data-section="audit" onclick="showSection('audit')">▤ Audit Log</div>
+<div class="nav logout" id="logout">↪ Logout</div>
+</aside>
 <main>
 <div id="dashboardSection">
 <div class="title"><div><h1>COO Dashboard</h1><p>Credit approval oversight and administrator control.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="createInvite('ADMIN_1')">＋ Admin 1 Invitation</button><button class="btn primary" onclick="createInvite('ADMIN_2')">＋ Admin 2 Invitation</button></div></div>
 <div class="cards"><div class="card"><div class="muted">Pending Approval</div><div class="num" id="pending">0</div></div><div class="card"><div class="muted">Active Admins</div><div class="num" id="admins">0</div></div><div class="card"><div class="muted">Total Requests</div><div class="num" id="total">0</div></div></div>
 <section class="panel"><h2>Admin Registration Link</h2><div class="muted">Generate a separate single-use invitation for Admin 1 or Admin 2. Each administrator creates their own password.</div><div id="linkArea" class="linkbox" style="display:none"><input id="inviteLink" readonly><button class="btn primary" onclick="copyLink()">Copy Link</button></div><div id="linkMsg" class="success"></div><div id="linkError" class="error"></div></section>
-<section class="panel"><h2>Admin Approval Control</h2><div style="overflow:auto"><table><thead><tr><th>Admin</th><th>Email</th><th>Approval Rights</th><th>Action</th></tr></thead><tbody id="adminRows"></tbody></table></div></section>
-<section class="panel"><h2>Approval Requests</h2><div id="requests" class="muted">Loading...</div></section>
-<section class="panel"><h2>Admin Control Audit Log</h2><p class="muted">History of administrator activation, blocking and approval-right changes.</p><div style="overflow:auto"><table><thead><tr><th>Date</th><th>Admin</th><th>Action</th><th>Reason</th><th>Changed By</th></tr></thead><tbody id="auditRows"><tr><td colspan="5" class="muted">Loading...</td></tr></tbody></table></div></section>
+<section class="panel appSection" id="adminSection"><h2>Admin Approval Control</h2><div style="overflow:auto"><table><thead><tr><th>Admin</th><th>Email</th><th>Approval Rights</th><th>Action</th></tr></thead><tbody id="adminRows"></tbody></table></div></section>
+<section class="panel appSection" id="requestsSection"><h2>Approval Requests</h2><div id="requests" class="muted">Loading...</div></section>
+<section class="panel appSection" id="auditSection"><h2>Admin Control Audit Log</h2><p class="muted">History of administrator activation, blocking and approval-right changes.</p><div style="overflow:auto"><table><thead><tr><th>Date</th><th>Admin</th><th>Action</th><th>Reason</th><th>Changed By</th></tr></thead><tbody id="auditRows"><tr><td colspan="5" class="muted">Loading...</td></tr></tbody></table></div></section>
+
 </div>
 
 <section class="panel" id="paymentSection" style="display:none">
@@ -54,13 +63,58 @@
 const U="https://vqcsxozodlduvzwqumoz.supabase.co",K="sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";const s=window.supabase.createClient(U,K);
 let editingCustomer=null;
 function showSection(name){
- document.getElementById("dashboardSection").style.display=name==="dashboard"?"block":"none";
- document.getElementById("customerSection").style.display=name==="customers"?"block":"none";
- document.getElementById("paymentSection").style.display=name==="payments"?"block":"none";
- if(name==="customers") loadCustomers();
- if(name==="payments") loadCooPayments();
+ const sections={
+  dashboard:"dashboardSection",
+  requests:"requestsSection",
+  customers:"customerSection",
+  payments:"paymentSection",
+  admin:"adminSection",
+  audit:"auditSection"
+ };
+ Object.values(sections).forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.style.display="none";
+ });
+ const target=document.getElementById(sections[name]||"dashboardSection");
+ if(target)target.style.display="block";
+ document.querySelectorAll(".nav[data-section]").forEach(el=>{
+  el.classList.toggle("active",el.dataset.section===name);
+ });
+ if(name==="customers")loadCustomers();
+ if(name==="payments")loadCooPayments();
+ if(name==="audit")loadAuditLog();
+ if(name==="admin")loadAdminManagement();
+ if(name==="requests")loadRequestsPanel();
 }
 function money(v){return "₹"+Number(v||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})}
+async function loadAdminManagement(){
+ const a=await s.from("credit_users").select("id,employee_name,email,is_active").eq("role","ADMIN").order("employee_name");
+ const ids=(a.data||[]).map(x=>x.id);
+ let controls=[];
+ if(ids.length){
+  const c=await s.from("credit_admin_controls").select("admin_user_id,approval_enabled").in("admin_user_id",ids);
+  controls=c.data||[];
+ }
+ document.getElementById("admins").textContent=(a.data||[]).filter(x=>x.is_active).length;
+ document.getElementById("adminRows").innerHTML=(a.data||[]).map(x=>{
+  const c=controls.find(y=>y.admin_user_id===x.id);
+  const on=c?c.approval_enabled:true;
+  return "<tr><td><strong>"+esc(x.employee_name)+"</strong></td><td>"+esc(x.email)+"</td><td><span class='toggle "+(on?"on":"off")+"'>"+(on?"ENABLED":"DISABLED")+"</span></td><td><button class='toggle "+(on?"off":"on")+"' onclick='control(""+x.id+"",""+(on?"DISABLE_APPROVAL":"ENABLE_APPROVAL")+"")'>"+(on?"Disable":"Enable")+"</button></td></tr>";
+ }).join("")||"<tr><td colspan='4'>No admins created yet.</td></tr>";
+}
+async function loadRequestsPanel(){
+ const r=await s.from("credit_requests").select("request_no,customer_name,requested_amount,status,created_at,submitted_at").order("created_at",{ascending:false});
+ if(r.error){document.getElementById("requests").textContent="Unable to load requests: "+r.error.message;return;}
+ const rows=r.data||[];
+ document.getElementById("total").textContent=rows.length;
+ document.getElementById("pending").textContent=rows.filter(x=>x.status==="SUBMITTED"||x.status==="HOLD").length;
+ document.getElementById("requests").innerHTML=rows.map(x=>{
+  const pending=x.status==="SUBMITTED"||x.status==="HOLD";
+  const mins=pending?Math.max(0,Math.floor((Date.now()-new Date(x.submitted_at||x.created_at).getTime())/60000)):0;
+  const age=pending?(Math.floor(mins/1440)+"d "+Math.floor((mins%1440)/60)+"h"):"-";
+  return "<div style='padding:10px 0;border-bottom:1px solid #eee'><strong>"+esc(x.request_no)+"</strong> — "+esc(x.customer_name)+" — ₹"+Number(x.requested_amount).toLocaleString("en-IN")+" — "+esc(x.status)+" — <span style='color:#6b7280'>Approval Age: "+age+"</span></div>";
+ }).join("")||"No requests yet.";
+}
 async function loadCooPayments(){
  const r=await s.from("credit_request_payment_summary").select("request_id,request_no,branch_id,customer_code,customer_name,status,invoice_count,total_invoiced,total_received,total_pending").order("request_id",{ascending:false}).limit(500);
  if(r.error){document.getElementById("cooPaymentRows").innerHTML="<tr><td colspan='8'>"+esc(r.error.message)+"</td></tr>";return}
@@ -108,8 +162,8 @@ function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").
 function msg(id,t){const e=document.getElementById(id);e.textContent=t;e.style.display="block"}
 async function load(){const {data:{user}}=await s.auth.getUser();if(!user){location.href="credit-login.html";return}const p=await s.from("credit_users").select("employee_name,email,role,is_active").eq("id",user.id).maybeSingle();if(p.error||!p.data||p.data.role!=="COO"||!p.data.is_active){await s.auth.signOut();location.href="credit-login.html";return}document.getElementById("user").textContent=p.data.employee_name+" • COO";
 await loadAuditLog();
-const a=await s.from("credit_users").select("id,employee_name,email,is_active").eq("role","ADMIN").order("employee_name");const ids=(a.data||[]).map(x=>x.id);let controls=[];if(ids.length){const c=await s.from("credit_admin_controls").select("admin_user_id,approval_enabled").in("admin_user_id",ids);controls=c.data||[]}document.getElementById("admins").textContent=(a.data||[]).filter(x=>x.is_active).length;document.getElementById("adminRows").innerHTML=(a.data||[]).map(x=>{const c=controls.find(y=>y.admin_user_id===x.id);const on=c?c.approval_enabled:true;return "<tr><td><strong>"+x.employee_name+"</strong></td><td>"+x.email+"</td><td><span class='toggle "+(on?"on":"off")+"'>"+(on?"ENABLED":"DISABLED")+"</span></td><td><button class='toggle "+(on?"off":"on")+"' onclick='control(""+x.id+"",""+(on?"DISABLE_APPROVAL":"ENABLE_APPROVAL")+"")'>"+(on?"Disable":"Enable")+"</button></td></tr>"}).join("")||"<tr><td colspan='4'>No admins created yet.</td></tr>";
-const r=await s.from("credit_requests").select("request_no,customer_name,requested_amount,status,created_at,submitted_at").order("created_at",{ascending:false});const rows=r.data||[];document.getElementById("total").textContent=rows.length;document.getElementById("pending").textContent=rows.filter(x=>x.status==="SUBMITTED"||x.status==="HOLD").length;document.getElementById("requests").innerHTML=rows.slice(0,8).map(x=>{const pending=x.status==="SUBMITTED"||x.status==="HOLD";const mins=pending?Math.max(0,Math.floor((Date.now()-new Date(x.submitted_at||x.created_at).getTime())/60000)):0;const age=pending?(Math.floor(mins/1440)+"d "+Math.floor((mins%1440)/60)+"h"):"-";return "<div style='padding:10px 0;border-bottom:1px solid #eee'><strong>"+x.request_no+"</strong> — "+x.customer_name+" — ₹"+Number(x.requested_amount).toLocaleString("en-IN")+" — "+x.status+" — <span style='color:#6b7280'>Approval Age: "+age+"</span></div>"}).join("")||"No requests yet."}
+await loadAdminManagement();
+await loadRequestsPanel();
 async function loadCustomers(){
  const q=(document.getElementById("customerSearch").value||"").trim();
  let query=s.from("credit_customer_credit_status").select("id,customer_code,customer_name,branch_id,credit_limit,existing_outstanding,available_credit,credit_days,is_active");
