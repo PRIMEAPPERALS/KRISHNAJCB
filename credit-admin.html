@@ -60,7 +60,7 @@ async function loadAll(){
  try{
   const br=document.getElementById("branch").value,st=document.getElementById("status").value,cu=document.getElementById("customer").value.trim();
   currentFilter={br,st,cu};
-  let q=s.from("credit_requests").select("id,request_no,branch_id,customer_name,requested_amount,approved_amount,requested_credit_days,approved_credit_days,status,created_at,decision_at,remarks").order("created_at",{ascending:false});
+  let q=s.from("credit_requests").select("id,request_no,branch_id,customer_id,customer_name,requested_amount,approved_amount,requested_credit_days,approved_credit_days,status,created_at,decision_at,remarks").order("created_at",{ascending:false});
   if(br)q=q.eq("branch_id",br);if(st)q=q.eq("status",st);if(cu)q=q.ilike("customer_name","%"+cu+"%");
   const rr=await q;if(rr.error)throw rr.error;requests=rr.data||[];
   const ids=requests.map(x=>x.id);
@@ -101,6 +101,11 @@ async function openReview(id){
  const r=await s.from("credit_requests").select("id,request_no,branch_id,customer_code,customer_name,requested_amount,requested_credit_days,purpose,remarks,status,created_at,submitted_at,approved_amount,approved_credit_days,approval_remarks,decision_reason,decision_at").eq("id",id).maybeSingle();
  if(r.error||!r.data){alert("Request could not be loaded.");return}
  const x=r.data;
+ let customerStatus=null;
+ if(x.customer_id){
+  const cs=await s.from("credit_customer_credit_status").select("credit_limit,existing_outstanding,available_credit,credit_days,is_active").eq("id",x.customer_id).maybeSingle();
+  if(!cs.error) customerStatus=cs.data;
+ }
  const h=await s.from("credit_approval_history").select("action,remarks,reason,approved_amount,approved_credit_days,created_at").eq("request_id",id).order("created_at",{ascending:true});
  const history=h.data||[];
  document.getElementById("reviewTitle").textContent=x.request_no+" • Credit Review";
@@ -111,6 +116,7 @@ async function openReview(id){
  "<div class='detail'><label>Requested Amount</label><strong>"+money(x.requested_amount)+"</strong></div>"+
  "<div class='detail'><label>Requested Credit Days</label><strong>"+esc(x.requested_credit_days)+" days</strong></div>"+
  "<div class='detail'><label>Status</label><strong>"+esc(x.status)+"</strong></div>"+
+ (customerStatus?"<div class='detail' style='grid-column:1/-1;background:#eef6ff'><label>Customer Credit Control</label><strong>Credit Limit: "+money(customerStatus.credit_limit)+" &nbsp; | &nbsp; Outstanding: "+money(customerStatus.existing_outstanding)+" &nbsp; | &nbsp; Available: "+money(customerStatus.available_credit)+" &nbsp; | &nbsp; Credit Days: "+esc(customerStatus.credit_days)+"</strong><div style='margin-top:7px;font-size:12px;color:"+(Number(x.requested_amount)>Number(customerStatus.available_credit)?"#b91c1c":"#047857")+"'>"+(Number(x.requested_amount)>Number(customerStatus.available_credit)?"Requested amount exceeds available credit.":"Requested amount is within available credit.")+"</div></div>":"<div class='detail' style='grid-column:1/-1;background:#fff7ed'><label>Customer Credit Control</label><strong>Customer Master credit information is not available.</strong></div>")+
  "<div class='detail' style='grid-column:1/-1'><label>Purpose</label><strong>"+esc(x.purpose)+"</strong></div>"+
  "<div class='detail' style='grid-column:1/-1'><label>Remarks</label><strong>"+esc(x.remarks||"-")+"</strong></div></div>";
  if(x.status==="SUBMITTED"||x.status==="HOLD"){
