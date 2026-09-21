@@ -6,20 +6,91 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--text)}header{height:72px;background:var(--navy);color:#fff;padding:0 28px;display:flex;justify-content:space-between;align-items:center}.brand{font-size:20px;font-weight:800}.brand small{display:block;font-size:11px;opacity:.7;margin-top:3px}.user{font-size:13px}.layout{display:flex;min-height:calc(100vh - 72px)}aside{width:235px;background:#17283f;color:#fff;padding:22px 14px}.nav{padding:13px 14px;border-radius:9px;margin-bottom:5px;color:#dbe4f0;font-size:14px}.active{background:var(--blue);color:#fff;font-weight:700}.logout{margin-top:25px;cursor:pointer}main{flex:1;padding:28px;max-width:1250px}.title{display:flex;justify-content:space-between;align-items:center;gap:15px}.title h1{margin:0;font-size:27px}.title p{color:var(--muted)}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin:22px 0}.card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px}.num{font-size:28px;font-weight:800;margin-top:8px}.muted{color:var(--muted);font-size:13px}.panel{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px;margin-bottom:18px}.panel h2{margin:0 0 15px;font-size:18px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px 9px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-size:12px}.toggle,.btn{padding:8px 12px;border:0;border-radius:8px;font-weight:700;cursor:pointer}.on{background:#dcfce7;color:#166534}.off{background:#fee2e2;color:#991b1b}.primary{background:var(--blue);color:#fff}.linkbox{display:flex;gap:8px;margin-top:15px}.linkbox input{flex:1;padding:11px;border:1px solid #d6dce5;border-radius:8px;font-size:13px}.success{display:none;margin-top:12px;background:#dcfce7;color:#166534;padding:11px;border-radius:8px;font-size:13px}.error{display:none;margin-top:12px;background:#fee2e2;color:#991b1b;padding:11px;border-radius:8px;font-size:13px}@media(max-width:750px){aside{display:none}.cards{grid-template-columns:1fr 1fr}main{padding:18px}.title{display:block}}@media(max-width:500px){.cards{grid-template-columns:1fr}}
 </style></head><body>
 <header><div class="brand">KRISHNA AUTOMOBILES<small>CREDIT PORTAL • COO CONTROL</small></div><div class="user" id="user">COO</div></header>
-<div class="layout"><aside><div class="nav active">▦ Dashboard</div><div class="nav">▣ Credit Requests</div><div class="nav">◉ Customer Master</div><div class="nav">♙ Admin Management</div><div class="nav">▤ Audit Log</div><div class="nav logout" id="logout">↪ Logout</div></aside>
+<div class="layout"><aside><div class="nav active" onclick="showSection('dashboard')">▦ Dashboard</div><div class="nav" onclick="showSection('requests')">▣ Credit Requests</div><div class="nav" onclick="showSection('customers')">◉ Customer Master</div><div class="nav">♙ Admin Management</div><div class="nav">▤ Audit Log</div><div class="nav logout" id="logout">↪ Logout</div></aside>
 <main>
+<div id="dashboardSection">
 <div class="title"><div><h1>COO Dashboard</h1><p>Credit approval oversight and administrator control.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="createInvite('ADMIN_1')">＋ Admin 1 Invitation</button><button class="btn primary" onclick="createInvite('ADMIN_2')">＋ Admin 2 Invitation</button></div></div>
 <div class="cards"><div class="card"><div class="muted">Pending Approval</div><div class="num" id="pending">0</div></div><div class="card"><div class="muted">Active Admins</div><div class="num" id="admins">0</div></div><div class="card"><div class="muted">Total Requests</div><div class="num" id="total">0</div></div></div>
 <section class="panel"><h2>Admin Registration Link</h2><div class="muted">Generate a separate single-use invitation for Admin 1 or Admin 2. Each administrator creates their own password.</div><div id="linkArea" class="linkbox" style="display:none"><input id="inviteLink" readonly><button class="btn primary" onclick="copyLink()">Copy Link</button></div><div id="linkMsg" class="success"></div><div id="linkError" class="error"></div></section>
 <section class="panel"><h2>Admin Approval Control</h2><div style="overflow:auto"><table><thead><tr><th>Admin</th><th>Email</th><th>Approval Rights</th><th>Action</th></tr></thead><tbody id="adminRows"></tbody></table></div></section>
 <section class="panel"><h2>Approval Requests</h2><div id="requests" class="muted">Loading...</div></section>
+</div>
+
+<section class="panel" id="customerSection" style="display:none">
+<div class="title"><div><h2 style="margin:0">Customer Master</h2><p class="muted">Manage customer credit limits, outstanding and credit days.</p></div></div>
+<div style="display:flex;gap:10px;margin:15px 0;flex-wrap:wrap">
+<input id="customerSearch" placeholder="Search customer code or name..." oninput="loadCustomers()" style="flex:1;min-width:240px;padding:11px;border:1px solid #d6dce5;border-radius:8px">
+<button class="btn primary" onclick="loadCustomers()">Search</button>
+</div>
+<div style="overflow:auto"><table><thead><tr><th>Customer</th><th>Branch</th><th>Credit Limit</th><th>Outstanding</th><th>Available</th><th>Credit Days</th><th>Status</th><th>Action</th></tr></thead><tbody id="customerRows"></tbody></table></div>
+</section>
+
+<div id="customerModal" style="display:none;position:fixed;inset:0;background:#0008;z-index:10;padding:20px;overflow:auto">
+<div style="max-width:520px;margin:60px auto;background:#fff;border-radius:14px;padding:22px">
+<h2 style="margin-top:0">Update Customer Credit</h2>
+<div class="muted" id="editCustomerName"></div>
+<div style="display:grid;gap:12px;margin-top:18px">
+<label>Credit Limit (₹)<input id="editLimit" type="number" min="0" step="0.01" style="width:100%;padding:10px;border:1px solid #d6dce5;border-radius:8px"></label>
+<label>Existing Outstanding (₹)<input id="editOutstanding" type="number" min="0" step="0.01" style="width:100%;padding:10px;border:1px solid #d6dce5;border-radius:8px"></label>
+<label>Credit Days<input id="editDays" type="number" min="0" step="1" style="width:100%;padding:10px;border:1px solid #d6dce5;border-radius:8px"></label>
+<label>Remarks<textarea id="editRemarks" rows="3" style="width:100%;padding:10px;border:1px solid #d6dce5;border-radius:8px"></textarea></label>
+<label><input id="editActive" type="checkbox"> Active Customer</label>
+</div>
+<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px">
+<button class="btn" onclick="closeCustomerModal()">Cancel</button>
+<button class="btn primary" onclick="saveCustomer()">Save Changes</button>
+</div>
+<div id="customerError" class="error"></div>
+</div></div>
 </main></div>
 <script>
 const U="https://vqcsxozodlduvzwqumoz.supabase.co",K="sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";const s=window.supabase.createClient(U,K);
+let editingCustomer=null;
+function showSection(name){
+ document.getElementById("dashboardSection").style.display=name==="dashboard"?"block":"none";
+ document.getElementById("customerSection").style.display=name==="customers"?"block":"none";
+ if(name==="customers") loadCustomers();
+}
+function money(v){return "₹"+Number(v||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 function msg(id,t){const e=document.getElementById(id);e.textContent=t;e.style.display="block"}
 async function load(){const {data:{user}}=await s.auth.getUser();if(!user){location.href="credit-login.html";return}const p=await s.from("credit_users").select("employee_name,email,role,is_active").eq("id",user.id).maybeSingle();if(p.error||!p.data||p.data.role!=="COO"||!p.data.is_active){await s.auth.signOut();location.href="credit-login.html";return}document.getElementById("user").textContent=p.data.employee_name+" • COO";
 const a=await s.from("credit_users").select("id,employee_name,email,is_active").eq("role","ADMIN").order("employee_name");const ids=(a.data||[]).map(x=>x.id);let controls=[];if(ids.length){const c=await s.from("credit_admin_controls").select("admin_user_id,approval_enabled").in("admin_user_id",ids);controls=c.data||[]}document.getElementById("admins").textContent=(a.data||[]).filter(x=>x.is_active).length;document.getElementById("adminRows").innerHTML=(a.data||[]).map(x=>{const c=controls.find(y=>y.admin_user_id===x.id);const on=c?c.approval_enabled:true;return "<tr><td><strong>"+x.employee_name+"</strong></td><td>"+x.email+"</td><td><span class='toggle "+(on?"on":"off")+"'>"+(on?"ENABLED":"DISABLED")+"</span></td><td><button class='toggle "+(on?"off":"on")+"' onclick='control(""+x.id+"",""+(on?"DISABLE_APPROVAL":"ENABLE_APPROVAL")+"")'>"+(on?"Disable":"Enable")+"</button></td></tr>"}).join("")||"<tr><td colspan='4'>No admins created yet.</td></tr>";
 const r=await s.from("credit_requests").select("request_no,customer_name,requested_amount,status,created_at").order("created_at",{ascending:false});const rows=r.data||[];document.getElementById("total").textContent=rows.length;document.getElementById("pending").textContent=rows.filter(x=>x.status==="SUBMITTED"||x.status==="HOLD").length;document.getElementById("requests").innerHTML=rows.slice(0,8).map(x=>"<div style='padding:10px 0;border-bottom:1px solid #eee'><strong>"+x.request_no+"</strong> — "+x.customer_name+" — ₹"+Number(x.requested_amount).toLocaleString("en-IN")+" — "+x.status+"</div>").join("")||"No requests yet."}
+async function loadCustomers(){
+ const q=(document.getElementById("customerSearch").value||"").trim();
+ let query=s.from("credit_customer_credit_status").select("id,customer_code,customer_name,branch_id,credit_limit,existing_outstanding,available_credit,credit_days,is_active");
+ if(q) query=query.or("customer_code.ilike.%"+q+"%,customer_name.ilike.%"+q+"%");
+ const r=await query.order("customer_name").limit(100);
+ if(r.error){document.getElementById("customerRows").innerHTML="<tr><td colspan='8'>"+esc(r.error.message)+"</td></tr>";return}
+ const rows=r.data||[];
+ const branchIds=[...new Set(rows.map(x=>x.branch_id).filter(Boolean))];
+ let branches={};
+ if(branchIds.length){const b=await s.from("credit_branches").select("id,branch_name,branch_code").in("id",branchIds);(b.data||[]).forEach(x=>branches[x.id]=x.branch_name+" • "+x.branch_code)}
+ document.getElementById("customerRows").innerHTML=rows.map(x=>"<tr><td><strong>"+esc(x.customer_name)+"</strong><br><small>"+esc(x.customer_code)+"</small></td><td>"+esc(branches[x.branch_id]||"")+"</td><td>"+money(x.credit_limit)+"</td><td>"+money(x.existing_outstanding)+"</td><td><strong>"+money(x.available_credit)+"</strong></td><td>"+x.credit_days+"</td><td>"+(x.is_active?"<span class='toggle on'>ACTIVE</span>":"<span class='toggle off'>INACTIVE</span>")+"</td><td><button class='btn primary' onclick='editCustomer("+x.id+")'>Edit</button></td></tr>").join("")||"<tr><td colspan='8'>No customers found.</td></tr>";
+}
+async function editCustomer(id){
+ const r=await s.from("credit_customer_credit_status").select("id,customer_code,customer_name,credit_limit,existing_outstanding,credit_days,is_active,remarks").eq("id",id).maybeSingle();
+ if(r.error||!r.data){alert("Customer not found.");return}
+ editingCustomer=r.data;
+ document.getElementById("editCustomerName").textContent=r.data.customer_name+" • "+r.data.customer_code;
+ document.getElementById("editLimit").value=r.data.credit_limit||0;
+ document.getElementById("editOutstanding").value=r.data.existing_outstanding||0;
+ document.getElementById("editDays").value=r.data.credit_days||0;
+ document.getElementById("editRemarks").value=r.data.remarks||"";
+ document.getElementById("editActive").checked=!!r.data.is_active;
+ document.getElementById("customerError").style.display="none";
+ document.getElementById("customerModal").style.display="block";
+}
+function closeCustomerModal(){document.getElementById("customerModal").style.display="none";editingCustomer=null}
+async function saveCustomer(){
+ if(!editingCustomer)return;
+ const limit=Number(document.getElementById("editLimit").value),out=Number(document.getElementById("editOutstanding").value),days=Number(document.getElementById("editDays").value);
+ if(!Number.isFinite(limit)||limit<0||!Number.isFinite(out)||out<0||!Number.isInteger(days)||days<0){msg("customerError","Enter valid credit values.");return}
+ const r=await s.rpc("credit_coo_update_customer",{p_customer_id:editingCustomer.id,p_credit_limit:limit,p_existing_outstanding:out,p_credit_days:days,p_is_active:document.getElementById("editActive").checked,p_remarks:document.getElementById("editRemarks").value.trim()||null});
+ if(r.error){msg("customerError",r.error.message);return}
+ closeCustomerModal();await loadCustomers();
+}
 async function createInvite(slot){document.getElementById("linkMsg").style.display="none";document.getElementById("linkError").style.display="none";const r=await s.rpc("credit_coo_create_admin_invite",{p_admin_slot:slot,p_valid_days:7});if(r.error){msg("linkError",r.error.message);return}const row=Array.isArray(r.data)?r.data[0]:r.data;if(!row){msg("linkError","Invitation was not created.");return}const link=location.origin+"/credit-admin-register.html?invite="+row.invite_token;document.getElementById("inviteLink").value=link;document.getElementById("linkArea").style.display="flex";msg("linkMsg",row.admin_slot.replace("_"," ")+" invitation created. It expires in 7 days and can be used once.");}
 async function copyLink(){const input=document.getElementById("inviteLink");await navigator.clipboard.writeText(input.value);msg("linkMsg","Invitation link copied. Share it with the administrator.");}
 async function control(id,action){const reason=prompt("Reason for this change:");if(!reason||!reason.trim()){alert("Reason is mandatory.");return}const r=await s.rpc("credit_coo_control_user",{p_user_id:id,p_action:action,p_reason:reason.trim()});if(r.error){alert(r.error.message);return}await load()}
