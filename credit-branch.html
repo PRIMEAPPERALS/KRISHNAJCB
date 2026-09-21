@@ -198,10 +198,10 @@ async function openPayment(id){
  document.getElementById("paymentTitle").textContent=x.request_no+" • Payment Tracking";
  let html="<div style='padding:13px;background:#f8fafc;border-radius:10px;margin:15px 0'><strong>"+esc(x.customer_name)+"</strong><br>Approved Amount: "+payMoney(x.approved_amount)+" • Approved Days: "+esc(x.approved_credit_days)+" • Status: "+statusBadge(x.status)+"</div>";
  html+="<div class='formactions' style='justify-content:flex-start'>";
- if(x.status==="APPROVED") html+="<button class='btn primary' onclick='addInvoiceForm(""+x.id+"")'>＋ Add Invoice</button>";
+ if(x.status==="APPROVED") html+="<button class='btn primary' onclick="addInvoiceForm('"+x.id+"')">＋ Add Invoice</button>";
  if(x.status==="APPROVED"&&inv.length) html+="<button class='btn green' onclick='closeApprovedRequest(""+x.id+"")'>Close Request</button>";
- if(x.status==="CLOSED"&&!x.receipt_update_open) html+="<button class='btn primary' onclick='reopenReceipt(""+x.id+"")'>Reopen for Receipt Update</button>";
- if(x.status==="CLOSED"&&x.receipt_update_open) html+="<button class='btn green' onclick='closeReceiptUpdate(""+x.id+"")'>Close Receipt Update</button>";
+ if(x.status==="CLOSED"&&!x.receipt_update_open) html+="<button class='btn primary' onclick="reopenReceipt('"+x.id+"')">Reopen for Receipt Update</button>";
+ if(x.status==="CLOSED"&&x.receipt_update_open) html+="<button class='btn green' onclick="closeReceiptUpdate('"+x.id+"')">Close Receipt Update</button>";
  html+="</div>";
  html+="<h3 style='margin-top:22px'>Invoices & Receipts</h3>";
  html+=inv.length?inv.map(i=>{
@@ -212,7 +212,7 @@ async function openPayment(id){
  document.getElementById("paymentModal").style.display="block";
 }
 function addInvoiceForm(requestId){
- document.getElementById("paymentContent").innerHTML="<h3>Add Invoice</h3><div class='formgrid'><div class='field'><label>Invoice Number *</label><input id='invNo'></div><div class='field'><label>Invoice Date *</label><input id='invDate' type='date' value='"+new Date().toISOString().slice(0,10)+"'></div><div class='field'><label>Due Date</label><input id='invDue' type='date'></div><div class='field'><label>Invoice Amount (₹) *</label><input id='invAmount' type='number' min='0.01' step='0.01'></div><div class='field full'><label>Remarks</label><textarea id='invRemarks'></textarea></div></div><div class='formactions'><button class='btn secondary' onclick="openPayment('"+requestId+"')">Cancel</button><button class='btn primary' onclick='saveInvoice(""+requestId+"")'>Save Invoice</button></div>";
+ document.getElementById("paymentContent").innerHTML="<h3>Add Invoice</h3><div class='formgrid'><div class='field'><label>Invoice Number *</label><input id='invNo'></div><div class='field'><label>Invoice Date *</label><input id='invDate' type='date' value='"+new Date().toISOString().slice(0,10)+"'></div><div class='field'><label>Due Date</label><input id='invDue' type='date'></div><div class='field'><label>Invoice Amount (₹) *</label><input id='invAmount' type='number' min='0.01' step='0.01'></div><div class='field full'><label>Remarks</label><textarea id='invRemarks'></textarea></div></div><div class='formactions'><button class='btn secondary' onclick="openPayment('"+requestId+"')">Cancel</button><button class='btn primary' onclick="saveInvoice('"+requestId+"')">Save Invoice</button></div>";
 }
 async function saveInvoice(requestId){
  const no=document.getElementById("invNo").value.trim(),date=document.getElementById("invDate").value,due=document.getElementById("invDue").value||null,amount=Number(document.getElementById("invAmount").value),remarks=document.getElementById("invRemarks").value.trim()||null;
@@ -222,7 +222,7 @@ async function saveInvoice(requestId){
  await openPayment(requestId);await loadPaymentTracking();
 }
 function addReceiptForm(invoiceId,requestId){
- document.getElementById("paymentContent").innerHTML="<h3>Add Receipt</h3><div class='formgrid'><div class='field'><label>Receipt Number *</label><input id='recNo'></div><div class='field'><label>Receipt Date *</label><input id='recDate' type='date' value='"+new Date().toISOString().slice(0,10)+"'></div><div class='field'><label>Received Amount (₹) *</label><input id='recAmount' type='number' min='0.01' step='0.01'></div><div class='field'><label>Payment Mode</label><input id='recMode' placeholder='NEFT / RTGS / Cheque / Cash'></div><div class='field full'><label>Remarks</label><textarea id='recRemarks'></textarea></div></div><div class='formactions'><button class='btn secondary' onclick='openPayment(""+requestId+"")'>Cancel</button><button class='btn green' onclick='saveReceipt(""+invoiceId+"",""+requestId+"")'>Save Receipt</button></div>";
+ document.getElementById("paymentContent").innerHTML="<h3>Add Receipt</h3><div class='formgrid'><div class='field'><label>Receipt Number *</label><input id='recNo'></div><div class='field'><label>Receipt Date *</label><input id='recDate' type='date' value='"+new Date().toISOString().slice(0,10)+"'></div><div class='field'><label>Received Amount (₹) *</label><input id='recAmount' type='number' min='0.01' step='0.01'></div><div class='field'><label>Payment Mode</label><input id='recMode' placeholder='NEFT / RTGS / Cheque / Cash'></div><div class='field full'><label>Remarks</label><textarea id='recRemarks'></textarea></div></div><div class='formactions'><button class='btn secondary' onclick="openPayment('"+requestId+"')">Cancel</button><button class='btn green' onclick="saveReceipt('"+invoiceId+"','"+requestId+"')">Save Receipt</button></div>";
 }
 async function saveReceipt(invoiceId,requestId){
  const no=document.getElementById("recNo").value.trim(),date=document.getElementById("recDate").value,amount=Number(document.getElementById("recAmount").value),mode=document.getElementById("recMode").value.trim()||null,remarks=document.getElementById("recRemarks").value.trim()||null;
