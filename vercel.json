@@ -3,6 +3,7 @@
   "rewrites": [
     { "source": "/credit-login", "destination": "/credit-login.html" },
     { "source": "/credit-register", "destination": "/credit-register.html" },
+    { "source": "/credit-admin-register", "destination": "/credit-admin-register.html" },
     { "source": "/credit-branch", "destination": "/credit-branch.html" },
     { "source": "/credit-admin", "destination": "/credit-admin.html" },
     { "source": "/credit-coo", "destination": "/credit-coo.html" }
