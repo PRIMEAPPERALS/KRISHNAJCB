@@ -391,7 +391,7 @@ async function loadRequests(){
  document.getElementById("draft").textContent=rows.filter(x=>x.status==="DRAFT").length;
  document.getElementById("pending").textContent=rows.filter(x=>x.status==="SUBMITTED"||x.status==="HOLD").length;
  document.getElementById("approved").textContent=rows.filter(x=>x.status==="APPROVED"||x.status==="CLOSED").length;
- document.getElementById("other").textContent=rows.filter(x=>x.status==="REJECTED").length;
+ document.getElementById("other").textContent=rows.filter(x=>x.status==="REJECTED"||x.status==="HOLD").length;
  if(rows.length){
   document.getElementById("recent").innerHTML=rows.slice(0,5).map(x=>"<div style='padding:12px 0;border-bottom:1px solid #eee'><strong>"+x.request_no+"</strong> — "+x.customer_name+"<br><span style='color:#6b7280;font-size:13px'>₹ "+Number(x.requested_amount).toLocaleString("en-IN")+" • "+x.status+"</span></div>").join("");
  }else document.getElementById("recent").innerHTML="No requests yet.";
