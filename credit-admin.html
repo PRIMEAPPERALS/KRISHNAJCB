@@ -113,6 +113,41 @@ function renderPayments(){
  document.getElementById("paymentBody").innerHTML=rows.length?rows.map(x=>"<tr><td><strong>"+esc(x.request_no)+"</strong></td><td>"+esc(branches[x.branch_id]?.branch_name||"-")+"</td><td>"+esc(x.customer_name)+"</td><td>"+x.invCount+"</td><td>"+money(x.invoiced)+"</td><td>"+money(x.received)+"</td><td>"+money(x.pending)+"</td><td><span class='status "+x.status+"'>"+x.status+"</span></td></tr>").join(""):"<tr><td colspan='8' class='empty'>No invoices recorded.</td></tr>";
 }
 function renderRequests(){document.getElementById("tbody").innerHTML=requests.length?requests.slice(0,100).map(x=>"<tr><td><strong>"+esc(x.request_no)+"</strong></td><td>"+new Date(x.created_at).toLocaleDateString("en-IN")+"</td><td>"+esc(branches[x.branch_id]?.branch_name||"-")+"</td><td>"+esc(x.customer_name)+"</td><td>"+money(x.approved_amount||0)+"</td><td>"+(x.approved_credit_days??x.requested_credit_days)+"</td><td><span class='status "+x.status+"'>"+x.status+"</span></td><td><button class='view' onclick='openReview(\""+x.id+"\")'>View</button></td></tr>").join(""):"<tr><td colspan='8' class='empty'>No credit requests found.</td></tr>"}
+async function loadAdminDocuments(requestId){
+ const box=document.getElementById("adminDocumentList");
+ if(!box)return;
+ box.innerHTML="<div style='color:var(--muted);font-size:13px'>Loading documents...</div>";
+
+ const r=await s.from("credit_request_documents")
+   .select("id,file_name,file_type,file_size,storage_path,created_at")
+   .eq("request_id",requestId)
+   .order("created_at",{ascending:true});
+
+ if(r.error){
+  box.innerHTML="<div style='color:#b91c1c;font-size:13px'>Unable to load documents: "+esc(r.error.message)+"</div>";
+  return;
+ }
+
+ const docs=r.data||[];
+ if(!docs.length){
+  box.innerHTML="<div style='color:var(--muted);font-size:13px'>No supporting documents uploaded.</div>";
+  return;
+ }
+
+ box.innerHTML=docs.map(d=>{
+  const path=encodeURIComponent(d.storage_path);
+  return "<div style='display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)'>"+
+   "<div><strong>"+esc(d.file_name)+"</strong><br><small style='color:var(--muted)'>"+(Number(d.file_size||0)/1024/1024).toFixed(2)+" MB • "+new Date(d.created_at).toLocaleString("en-IN")+"</small></div>"+
+   "<button class='view' onclick='openAdminDocument(decodeURIComponent(&quot;"+path+"&quot;))'>View</button></div>";
+ }).join("");
+}
+
+async function openAdminDocument(path){
+ const r=await s.storage.from("credit-documents").createSignedUrl(path,600);
+ if(r.error){alert("Unable to open document: "+r.error.message);return;}
+ window.open(r.data.signedUrl,"_blank","noopener");
+}
+
 async function openReview(id){
  const r=await s.from("credit_requests").select("id,request_no,branch_id,customer_id,customer_code,customer_name,requested_amount,requested_credit_days,purpose,remarks,status,created_at,submitted_at,approved_amount,approved_credit_days,approval_remarks,decision_reason,decision_at").eq("id",id).maybeSingle();
  if(r.error||!r.data){alert("Request could not be loaded.");return}
@@ -134,7 +169,8 @@ async function openReview(id){
  "<div class='detail'><label>Status</label><strong>"+esc(x.status)+"</strong></div>"+
  (customerStatus?"<div class='detail' style='grid-column:1/-1;background:#eef6ff'><label>Customer Credit Control</label><strong>Credit Limit: "+money(customerStatus.credit_limit)+" &nbsp; | &nbsp; Outstanding: "+money(customerStatus.existing_outstanding)+" &nbsp; | &nbsp; Available: "+money(customerStatus.available_credit)+" &nbsp; | &nbsp; Credit Days: "+esc(customerStatus.credit_days)+"</strong><div style='margin-top:7px;font-size:12px;color:"+(Number(x.requested_amount)>Number(customerStatus.available_credit)?"#b91c1c":"#047857")+"'>"+(Number(x.requested_amount)>Number(customerStatus.available_credit)?"Requested amount exceeds available credit.":"Requested amount is within available credit.")+"</div></div>":"<div class='detail' style='grid-column:1/-1;background:#fff7ed'><label>Customer Credit Control</label><strong>Customer Master credit information is not available.</strong></div>")+
  "<div class='detail' style='grid-column:1/-1'><label>Purpose</label><strong>"+esc(x.purpose)+"</strong></div>"+
- "<div class='detail' style='grid-column:1/-1'><label>Remarks</label><strong>"+esc(x.remarks||"-")+"</strong></div></div>";
+ "<div class='detail' style='grid-column:1/-1'><label>Remarks</label><strong>"+esc(x.remarks||"-")+"</strong></div></div>"+
+ "<div class='reviewbox' style='margin-top:18px'><strong>Supporting Documents</strong><div id='adminDocumentList' style='margin-top:10px'>Loading documents...</div></div>";
  if(x.status==="SUBMITTED"||x.status==="HOLD"){
   html+="<div class='reviewbox'><strong>Decision</strong><div class='detailgrid'>"+
   "<div><label>Approved Amount</label><input id='reviewAmount' type='number' min='0.01' step='0.01' value='"+(x.approved_amount||x.requested_amount)+"'></div>"+
@@ -146,6 +182,7 @@ async function openReview(id){
  }
  html+="<div class='history'><h3>Approval History</h3>"+(history.length?history.map(y=>"<div class='historyitem'><strong>"+esc(y.action)+"</strong> • "+new Date(y.created_at).toLocaleString("en-IN")+(y.reason?"<br>Reason: "+esc(y.reason):"")+(y.remarks?"<br>Remarks: "+esc(y.remarks):"")+(y.approved_amount!=null?"<br>Approved: "+money(y.approved_amount):"")+"</div>").join(""):"<div class='empty'>No history.</div>")+"</div>";
  document.getElementById("reviewContent").innerHTML=html;document.getElementById("reviewModal").style.display="block";
+ await loadAdminDocuments(id);
 }
 function closeReview(){document.getElementById("reviewModal").style.display="none";}
 async function decideRequest(id,action){
