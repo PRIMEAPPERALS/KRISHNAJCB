@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Krishna Stock - Private Inventory Report</title>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <style>
+    body{font-family:Arial,sans-serif;background:#f4f5f7;margin:0;padding:25px}.container{max-width:1000px;margin:auto}.card{background:#fff;padding:22px;border-radius:12px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.08)}h1{margin-top:0}input,button{padding:12px;font-size:16px;box-sizing:border-box}input{width:100%;border:1px solid #ccc;border-radius:8px;margin:8px 0 12px}button{border:0;border-radius:8px;background:#222;color:#fff;cursor:pointer;margin:6px 6px 6px 0}.secondary{background:#555}.status{margin-top:12px;padding:12px;background:#f1f1f1;white-space:pre-line}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.metric{padding:16px;border-radius:10px;background:#f7f7f7}.metric b{display:block;font-size:22px;margin-top:6px}@media(max-width:700px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1>Private Inventory Intelligence</h1>
+    <p>This page is for authorised management use only.</p>
+    <input type="password" id="password" placeholder="Admin Password">
+    <button onclick="generateReport()">GENERATE REPORT</button>
+    <div id="status" class="status">Report not generated.</div>
+  </div>
+
+  <div id="summary" class="card" style="display:none">
+    <h2>Report Summary</h2>
+    <div class="grid">
+      <div class="metric">Excess Stock Lines<b id="excessLines">0</b></div>
+      <div class="metric">Sale Loss Lines<b id="lossLines">0</b></div>
+      <div class="metric">Transfer Opportunities<b id="transferLines">0</b></div>
+    </div>
+    <br>
+    <button onclick="downloadExcel()">DOWNLOAD COMPLETE EXCEL</button>
+    <button class="secondary" onclick="downloadCsv('excess')">EXCESS STOCK CSV</button>
+    <button class="secondary" onclick="downloadCsv('loss')">STOCKOUT / SALE LOSS CSV</button>
+    <button class="secondary" onclick="downloadCsv('transfer')">TRANSFER OPPORTUNITY CSV</button>
+  </div>
+</div>
+
+<script>
+let report = null;
+
+async function generateReport(){
+  const password=document.getElementById('password').value;
+  const status=document.getElementById('status');
+  if(!password){status.innerText='Please enter admin password.';return;}
+  status.innerText='Generating private inventory report...';
+  try{
+    const response=await fetch('/api/inventory-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
+    const result=await response.json();
+    if(!response.ok) throw new Error(result.error||'Report generation failed');
+    report=result;
+    document.getElementById('summary').style.display='block';
+    document.getElementById('excessLines').innerText=result.summary.excessStockLines.toLocaleString('en-IN');
+    document.getElementById('lossLines').innerText=result.summary.stockoutSaleLossLines.toLocaleString('en-IN');
+    document.getElementById('transferLines').innerText=result.summary.transferOpportunityLines.toLocaleString('en-IN');
+    status.innerText='✅ Report generated successfully. You can download the Excel workbook or individual CSV reports.';
+  }catch(error){status.innerText='❌ ERROR: '+error.message;}
+}
+
+function downloadExcel(){
+  if(!report)return;
+  const wb=XLSX.utils.book_new();
+  const sheets=[
+    ['Excess Stock',report.excessStock],
+    ['Stockout Sale Loss',report.stockoutSaleLoss],
+    ['Transfer Opportunity',report.transferOpportunities]
+  ];
+  sheets.forEach(([name,data])=>{
+    const ws=XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb,ws,name.slice(0,31));
+  });
+  XLSX.writeFile(wb,'Krishna_Inventory_Intelligence.xlsx');
+}
+
+function downloadCsv(type){
+  if(!report)return;
+  const map={
+    excess:['Excess_Stock.csv',report.excessStock],
+    loss:['Stockout_Sale_Loss.csv',report.stockoutSaleLoss],
+    transfer:['Transfer_Opportunity.csv',report.transferOpportunities]
+  };
+  const [filename,data]=map[type];
+  const ws=XLSX.utils.json_to_sheet(data);
+  const csv=XLSX.utils.sheet_to_csv(ws);
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>
