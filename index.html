@@ -318,7 +318,7 @@
         // STEP 2: Find stock for this valid part
         const stockUrl =
           SUPABASE_URL +
-          "/rest/v1/branch_stock?Itemcode=ilike." +
+          "/rest/v1/branch_stock_with_location?Itemcode=ilike." +
           encodeURIComponent(masterPart.Itemcode) +
           "&select=Itemcode,ItemName,Branch,quantity,Location";
 
