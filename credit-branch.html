@@ -21,6 +21,29 @@
 
 @media(max-width:700px){.wrap{padding:16px}.top{padding:16px}.grid{grid-template-columns:repeat(2,1fr)}.actions{grid-template-columns:1fr}.welcome h1{font-size:23px}.user{display:none}.formgrid{grid-template-columns:1fr}.field.full{grid-column:auto}.formactions{flex-direction:column}.formactions .btn{width:100%}}
 @media(max-width:500px){.grid{grid-template-columns:1fr 1fr}.stat .num{font-size:24px}}
+
+header.top{background:#ffffff!important;color:#242424!important;border-bottom:1px solid #e1dfdd!important;box-shadow:0 1px 4px rgba(0,0,0,.08)!important}
+.brand{color:#242424!important}.sub{color:#616161!important}
+.wrap{max-width:1400px!important}
+.action{background:#fff!important}
+.action:hover{border-color:#0f6cbd!important;box-shadow:0 4px 14px rgba(0,0,0,.10)!important}
+
+/* Windows 365 / Microsoft Fluent-inspired visual system */
+:root{
+ --fluent-blue:#0f6cbd;--fluent-blue-hover:#115ea3;--fluent-bg:#f5f5f5;
+ --fluent-surface:#ffffff;--fluent-text:#242424;--fluent-muted:#616161;
+ --fluent-border:#e1dfdd;--fluent-shadow:0 2px 8px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.05);
+ --fluent-radius:8px;
+}
+body{font-family:"Segoe UI",Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif!important;background:var(--fluent-bg)!important;color:var(--fluent-text)!important}
+button,.btn,input,select,textarea{font-family:inherit!important}
+button,.btn{border-radius:6px!important;transition:background .15s,box-shadow .15s,transform .15s!important}
+button:hover,.btn:hover{transform:none!important}
+input,select,textarea{border:1px solid #d1d1d1!important;border-radius:6px!important;background:#fff!important;color:#242424!important}
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--fluent-blue)!important;box-shadow:0 0 0 1px var(--fluent-blue)!important}
+table th{background:#faf9f8!important;color:#616161!important;font-weight:600!important}
+table tbody tr:hover{background:#f3f9fd!important}
+.panel,.card,.kpi,.stat,.action,.welcome{border:1px solid var(--fluent-border)!important;border-radius:8px!important;box-shadow:var(--fluent-shadow)!important}
 </style>
 </head>
 <body>
