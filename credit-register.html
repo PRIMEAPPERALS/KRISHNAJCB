@@ -67,7 +67,30 @@
     .info { display: block !important; background: #f1f5f9; color: #334155; }
     .success { display: block !important; background: #effaf0; color: #176b2c; }
     .hidden { display: none; }
-  </style>
+  
+body{background:linear-gradient(180deg,#eef6fc 0%,#f5f5f5 55%,#f5f5f5 100%)!important;min-height:100vh}
+.card{border:1px solid #e1dfdd!important;border-radius:8px!important;box-shadow:0 8px 28px rgba(0,0,0,.10)!important}
+h1{font-weight:600!important;letter-spacing:-.3px}
+button,.btn,#loginButton,#registerButton,#submit{background:#0f6cbd!important;color:#fff!important;border:0!important}
+button:hover,.btn:hover,#loginButton:hover,#registerButton:hover,#submit:hover{background:#115ea3!important}
+
+/* Windows 365 / Microsoft Fluent-inspired visual system */
+:root{
+ --fluent-blue:#0f6cbd;--fluent-blue-hover:#115ea3;--fluent-bg:#f5f5f5;
+ --fluent-surface:#ffffff;--fluent-text:#242424;--fluent-muted:#616161;
+ --fluent-border:#e1dfdd;--fluent-shadow:0 2px 8px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.05);
+ --fluent-radius:8px;
+}
+body{font-family:"Segoe UI",Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif!important;background:var(--fluent-bg)!important;color:var(--fluent-text)!important}
+button,.btn,input,select,textarea{font-family:inherit!important}
+button,.btn{border-radius:6px!important;transition:background .15s,box-shadow .15s,transform .15s!important}
+button:hover,.btn:hover{transform:none!important}
+input,select,textarea{border:1px solid #d1d1d1!important;border-radius:6px!important;background:#fff!important;color:#242424!important}
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--fluent-blue)!important;box-shadow:0 0 0 1px var(--fluent-blue)!important}
+table th{background:#faf9f8!important;color:#616161!important;font-weight:600!important}
+table tbody tr:hover{background:#f3f9fd!important}
+.panel,.card,.kpi,.stat,.action,.welcome{border:1px solid var(--fluent-border)!important;border-radius:8px!important;box-shadow:var(--fluent-shadow)!important}
+</style>
 </head>
 <body>
   <div class="card">
