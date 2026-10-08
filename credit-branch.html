@@ -312,13 +312,33 @@ async function openPayment(id){
  document.getElementById("paymentModal").style.display="block";
 }
 function addInvoiceForm(requestId){
-  document.getElementById("paymentContent").innerHTML="<h3>Add Invoice</h3><div class='formgrid'><div class='field'><label>Invoice Number *</label><input id='invNo'></div><div class='field'><label>Invoice Date *</label><input id='invDate' type='date' value='"+new Date().toISOString().slice(0,10)+"'></div><div class='field'><label>Due Date</label><input id='invDue' type='date'></div><div class='field'><label>Invoice Amount (₹) *</label><input id='invAmount' type='number' min='0.01' step='0.01'></div><div class='field full'><label>Remarks</label><textarea id='invRemarks'></textarea></div></div><div class='formactions'><button class='btn secondary' onclick='openPayment("+requestId+")'>Cancel</button><button class='btn primary' onclick='saveInvoice("+requestId+")'>Save Invoice</button></div>";
+  document.getElementById("paymentContent").innerHTML="<h3>Add Invoice</h3><div class='formgrid'><div class='field'><label>Invoice Number *</label><input id='invNo'></div><div class='field'><label>Invoice Date *</label><input id='invDate' type='date' value='"+new Date().toISOString().slice(0,10)+"'></div><div class='field'><label>Due Date</label><input id='invDue' type='date'></div><div class='field'><label>Invoice Amount (₹) *</label><input id='invAmount' type='number' min='0.01' step='0.01'></div><div class='field full'><label>Invoice Copy / Upload *</label><input id='invoiceFile' type='file' accept='.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png'><div class='muted' style='margin-top:6px'>Upload the invoice copy in PDF/JPG/PNG format. Maximum 10 MB.</div></div><div class='field full'><label>Remarks</label><textarea id='invRemarks'></textarea></div></div><div class='formactions'><button class='btn secondary' onclick='openPayment("+requestId+")'>Cancel</button><button class='btn primary' onclick='saveInvoice("+requestId+")'>Save Invoice</button></div>";
 }
 async function saveInvoice(requestId){
- const no=document.getElementById("invNo").value.trim(),date=document.getElementById("invDate").value,due=document.getElementById("invDue").value||null,amount=Number(document.getElementById("invAmount").value),remarks=document.getElementById("invRemarks").value.trim()||null;
+ const no=document.getElementById("invNo").value.trim(),date=document.getElementById("invDate").value,due=document.getElementById("invDue").value||null,amount=Number(document.getElementById("invAmount").value),remarks=document.getElementById("invRemarks").value.trim()||null,file=document.getElementById("invoiceFile").files[0];
  if(!no||!date||!Number.isFinite(amount)||amount<=0){alert("Enter invoice number, date and valid amount.");return;}
+ if(!file){alert("Invoice copy upload is required.");return;}
+ if(file.size<=0||file.size>10*1024*1024){alert("Invoice file must be greater than 0 and not exceed 10 MB.");return;}
+ if(!["application/pdf","image/jpeg","image/png"].includes(file.type)){alert("Only PDF, JPG, JPEG or PNG invoice files are allowed.");return;}
+
  const r=await supabaseClient.rpc("credit_add_invoice",{p_request_id:requestId,p_invoice_no:no,p_invoice_date:date,p_due_date:due,p_invoice_amount:amount,p_remarks:remarks});
  if(r.error){alert(r.error.message);return;}
+
+ const invoice=r.data;
+ const invoiceId=Array.isArray(invoice)?invoice[0]?.id:invoice?.id;
+ if(!invoiceId){alert("Invoice was created but its ID could not be returned.");return;}
+
+ try{
+  const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+  const storagePath=requestId+"/invoice_"+invoiceId+"/"+Date.now()+"_"+safeName;
+  const up=await supabaseClient.storage.from("credit-documents").upload(storagePath,file,{upsert:false,contentType:file.type});
+  if(up.error)throw up.error;
+  const doc=await supabaseClient.rpc("credit_register_document",{p_request_id:requestId,p_file_name:"Invoice Copy - "+no+" - "+file.name,p_storage_path:storagePath,p_file_type:file.type,p_file_size:file.size});
+  if(doc.error)throw doc.error;
+ }catch(e){
+  alert("Invoice was saved, but invoice copy upload failed: "+e.message+" Please upload the invoice copy from the request documents section.");
+  await openPayment(requestId);await loadPaymentTracking();return;
+ }
  await openPayment(requestId);await loadPaymentTracking();
 }
 function addReceiptForm(invoiceId,requestId){
