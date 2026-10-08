@@ -35,7 +35,7 @@
 
 <section class="panel" id="reportsSection" style="display:none">
 <div class="title"><div><h2 style="margin:0">Credit Reports & Analytics</h2><p class="muted">Complete month-wise, year-wise and branch-wise credit tracking.</p></div>
-<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label class="muted">Year <select id="reportYear" onchange="loadCooReports()" style="padding:9px;border:1px solid #d6dce5;border-radius:8px"></select></label><button class="btn primary" onclick="loadCooReports()">Refresh</button></div></div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label class="muted">Year <select id="reportYear" onchange="loadCooReports()" style="padding:9px;border:1px solid #d6dce5;border-radius:8px"></select></label><label class="muted">Month <select id="reportMonth" onchange="loadCooReports()" style="padding:9px;border:1px solid #d6dce5;border-radius:8px"><option value="ALL">All Months</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></label><button class="btn primary" onclick="loadCooReports()">Refresh</button><button class="btn" onclick="downloadCreditAgingReport()">⬇ Download Aging Report</button></div></div>
 <div class="cards" style="margin:15px 0">
 <div class="card"><div class="muted">Credit Requested</div><div class="num" id="repRequested">₹0</div></div>
 <div class="card"><div class="muted">Credit Approved</div><div class="num" id="repApproved">₹0</div></div>
@@ -46,6 +46,7 @@
 </div>
 <section class="panel"><h2>Month-wise Credit Tracking — All Branches</h2><div style="overflow:auto"><table><thead><tr><th>Month</th><th>Requests</th><th>Requested</th><th>Approved</th><th>Invoiced</th><th>Unutilized</th><th>Received</th><th>Pending</th></tr></thead><tbody id="reportMonthRows"></tbody></table></div></section>
 <section class="panel"><h2>Branch-wise Yearly Summary</h2><div style="overflow:auto"><table><thead><tr><th>Branch</th><th>Requests</th><th>Requested</th><th>Approved</th><th>Invoiced</th><th>Unutilized</th><th>Received</th><th>Pending</th></tr></thead><tbody id="reportBranchRows"></tbody></table></div></section>
+<section class="panel"><h2>Invoice-wise Credit Ageing & Payment Analysis</h2><p class="muted">Shows due date, approved credit days, days over due, payment received and whether an overdue invoice has already been paid.</p><div style="overflow:auto"><table><thead><tr><th>Invoice</th><th>Request</th><th>Branch</th><th>Customer</th><th>Invoice Date</th><th>Due Date</th><th>Credit Days</th><th>Days Over</th><th>Invoice Amount</th><th>Received</th><th>Pending</th><th>Payment Status</th></tr></thead><tbody id="reportAgingRows"></tbody></table></div></section>
 <section class="panel"><h2>Branch × Month Tracking</h2><p class="muted">Approved credit, invoices and receipts by branch and month.</p><div style="overflow:auto"><table><thead><tr><th>Branch</th><th>Month</th><th>Approved</th><th>Invoiced</th><th>Received</th><th>Pending</th></tr></thead><tbody id="reportBranchMonthRows"></tbody></table></div></section>
 </section>
 <section class="panel" id="customerSection" style="display:none">
@@ -190,13 +191,30 @@ async function fetchAllRows(table,columns,filters){
 }
 function reportMonthKey(date){return date?String(date).slice(0,7):null}
 function reportMonthLabel(key){return new Date(key+"-01T00:00:00").toLocaleDateString("en-IN",{month:"short",year:"numeric"})}
+let cooAgingRows=[];
+function parseLocalDate(s){return s?new Date(s+"T00:00:00"):null}
+function ageForInvoice(invoiceDate,dueDate,approvedDays){
+ const inv=parseLocalDate(invoiceDate);
+ const due=dueDate?parseLocalDate(dueDate):(inv?new Date(inv.getTime()+Number(approvedDays||0)*86400000):null);
+ const today=new Date();today.setHours(0,0,0,0);
+ return {due,dueDays:due?Math.max(0,Math.floor((today-due)/86400000)):0,overdue:!!due&&today>due};
+}
+function csvCell(v){return '"'+String(v??"").replace(/"/g,'""')+'"'}
+function downloadCreditAgingReport(){
+ if(!cooAgingRows.length){alert("No invoice ageing data available for the selected period.");return}
+ const headers=["Month","Invoice No","Request No","Branch","Customer Code","Customer Name","Invoice Date","Due Date","Approved Credit Days","Days Over Due","Invoice Amount","Received Amount","Pending Amount","Payment Status","Credit Days Over?","Overdue But Paid?"];
+ const lines=[headers.map(csvCell).join(",")];
+ cooAgingRows.forEach(x=>lines.push([x.month,x.invoice_no,x.request_no,x.branch,x.customer_code,x.customer_name,x.invoice_date,x.due_date,x.credit_days,x.days_over,x.invoice_amount,x.received,x.pending,x.payment_status,x.credit_over?"YES":"NO",x.overdue_paid?"YES":"NO"].map(csvCell).join(",")));
+ const blob=new Blob(["\ufeff"+lines.join("\n")],{type:"text/csv;charset=utf-8;"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="Credit_Ageing_Report_"+(document.getElementById("reportYear").value||"Year")+"_"+(document.getElementById("reportMonth").value||"ALL")+".csv";a.click();URL.revokeObjectURL(a.href);
+}
 async function loadCooReports(){
  reportYears();
  const year=Number(document.getElementById("reportYear").value||new Date().getFullYear());
  const from=year+"-01-01T00:00:00";
  const to=(year+1)+"-01-01T00:00:00";
  try{
-  const requests=await fetchAllRows("credit_requests","id,branch_id,requested_amount,approved_amount,status,created_at,submitted_at,decision_at");
+  const requests=await fetchAllRows("credit_requests","id,branch_id,requested_amount,approved_amount,approved_credit_days,status,customer_code,customer_name,created_at,submitted_at,decision_at");
   const invoices=await fetchAllRows("credit_invoices","id,request_id,invoice_amount,invoice_date");
   const receipts=await fetchAllRows("credit_receipts","id,invoice_id,received_amount,receipt_date");
   const branchesR=await s.from("credit_branches").select("id,branch_name,branch_code").order("branch_name");
@@ -252,6 +270,24 @@ async function loadCooReports(){
    if(approved||binv||brec)bmRows.push("<tr><td>"+esc(b.branch_name)+"</td><td>"+reportMonthLabel(k)+"</td><td>"+money(approved)+"</td><td>"+money(binv)+"</td><td>"+money(brec)+"</td><td>"+money(Math.max(binv-brec,0))+"</td></tr>");
   }));
   document.getElementById("reportBranchMonthRows").innerHTML=bmRows.join("")||"<tr><td colspan='6' class='muted'>No credit activity for the selected year.</td></tr>";
+
+  const monthFilter=document.getElementById("reportMonth").value||"ALL";
+  const reqMap={};requests.forEach(x=>reqMap[x.id]=x);
+  const invoiceReceived={};receipts.forEach(x=>{invoiceReceived[x.invoice_id]=(invoiceReceived[x.invoice_id]||0)+Number(x.received_amount||0);});
+  const invoiceRows=invoices.filter(i=>{
+   const k=reportMonthKey(i.invoice_date);
+   return i.invoice_date>=from.slice(0,10)&&i.invoice_date<to.slice(0,10)&&(monthFilter==="ALL"||k===year+"-"+monthFilter);
+  });
+  cooAgingRows=invoiceRows.map(i=>{
+   const q=reqMap[i.request_id]||{};
+   const b=bm[q.branch_id]||"";
+   const rec=invoiceReceived[i.id]||0;
+   const pending=Math.max(Number(i.invoice_amount||0)-rec,0);
+   const age=ageForInvoice(i.invoice_date,i.due_date,q.approved_credit_days);
+   const paid=age.overdue&&pending<=0;
+   return {month:reportMonthLabel(reportMonthKey(i.invoice_date)),invoice_no:i.invoice_no,request_no:q.request_no||"",branch:b,customer_code:q.customer_code||"",customer_name:q.customer_name||"",invoice_date:i.invoice_date,due_date:age.due?age.due.toISOString().slice(0,10):"",credit_days:Number(q.approved_credit_days||0),days_over:age.dueDays,invoice_amount:Number(i.invoice_amount||0),received:rec,pending,payment_status:pending<=0?"PAID":rec>0?"PARTIAL":"PENDING",credit_over:age.overdue,overdue_paid:paid};
+  });
+  document.getElementById("reportAgingRows").innerHTML=cooAgingRows.map(x=>"<tr><td><strong>"+esc(x.invoice_no)+"</strong></td><td>"+esc(x.request_no)+"</td><td>"+esc(x.branch)+"</td><td>"+esc(x.customer_name)+"<br><small>"+esc(x.customer_code)+"</small></td><td>"+esc(x.invoice_date)+"</td><td>"+esc(x.due_date)+"</td><td>"+x.credit_days+"</td><td>"+x.days_over+(x.credit_over?" <strong style='color:#b91c1c'>OVER</strong>":"")+"</td><td>"+money(x.invoice_amount)+"</td><td>"+money(x.received)+"</td><td>"+money(x.pending)+"</td><td>"+esc(x.payment_status)+(x.overdue_paid?" <strong style='color:#047857'>OVERDUE BUT PAID</strong>":"")+"</td></tr>").join("")||"<tr><td colspan='12' class='muted'>No invoice records for the selected period.</td></tr>";
  }catch(e){
   const msg=esc(e.message||String(e));
   ["reportMonthRows","reportBranchRows","reportBranchMonthRows"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML="<tr><td colspan='8' style='color:#b91c1c'>"+msg+"</td></tr>";});
