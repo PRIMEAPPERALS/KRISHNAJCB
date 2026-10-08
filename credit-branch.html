@@ -241,6 +241,7 @@ async function viewRequest(id){
  (x.approval_remarks?"<br><strong>Approval Remarks:</strong> "+esc(x.approval_remarks):"")+
  (x.decision_reason?"<br><strong>Decision/Hold Reason:</strong> "+esc(x.decision_reason):"")+
  "</div>"+
+ (x.status==="APPROVED"?"<div style='margin-top:18px;padding:15px;background:#eef6ff;border:1px solid #bfdbfe;border-radius:10px'><h3 style='margin:0 0 8px'>Invoice Upload</h3><p style='margin:0 0 12px;color:var(--muted);font-size:13px'>This request has been approved. Add the customer invoice against the approved credit.</p><button class='btn primary' onclick='openInvoiceFromRequest("+x.id+")'>＋ Add Invoice</button></div>":"")+
  "<div style='margin-top:18px;padding:15px;background:#f8fafc;border-radius:10px'><h3 style='margin:0 0 10px'>Supporting Documents</h3><div id='documentList'>Loading documents...</div></div>"+
  "<h3 style='margin-top:22px'>Request Timeline</h3>"+
  (history.length?history.map(y=>"<div style='padding:12px 0;border-bottom:1px solid var(--border)'><strong>"+esc(y.action)+"</strong><br><small>"+new Date(y.created_at).toLocaleString("en-IN")+"</small>"+(y.reason?"<br>Reason: "+esc(y.reason):"")+(y.remarks?"<br>Remarks: "+esc(y.remarks):"")+(y.approved_amount!=null?"<br>Approved: "+money(y.approved_amount):"")+"</div>").join(""):"<div class='empty'>No history available.</div>");
@@ -281,6 +282,10 @@ async function loadPaymentTracking(){
  const totals=data.reduce((a,x)=>({invoiced:a.invoiced+x.invoiced,received:a.received+x.received,pending:a.pending+x.pending}),{invoiced:0,received:0,pending:0});
  document.getElementById("paymentSummary").innerHTML="<div class='paycard'><h3>Total Invoiced</h3><strong>"+payMoney(totals.invoiced)+"</strong></div><div class='paycard'><h3>Total Received</h3><strong>"+payMoney(totals.received)+"</strong></div><div class='paycard'><h3>Total Pending</h3><strong>"+payMoney(totals.pending)+"</strong></div><div class='paycard'><h3>Approved Requests</h3><strong>"+data.filter(x=>x.status==="APPROVED").length+"</strong></div>";
   document.getElementById("paymentRows").innerHTML=data.map(x=>"<tr><td><strong>"+esc(x.request_no)+"</strong></td><td>"+esc(x.customer_name)+"</td><td>"+statusBadge(x.status)+(x.receipt_update_open?"<br><small style='color:#b45309'>Receipt update open</small>":"")+"</td><td>"+payMoney(x.invoiced)+"</td><td>"+payMoney(x.received)+"</td><td>"+payMoney(x.pending)+"</td><td><button class='btn primary' onclick='openPayment("+x.id+")'>Manage</button></td></tr>").join("")||"<tr><td colspan='7' class='empty'>No approved or closed requests.</td></tr>";
+}
+function openInvoiceFromRequest(id){
+ document.getElementById("paymentModal").style.display="block";
+ addInvoiceForm(id);
 }
 async function openPayment(id){
  const r=await supabaseClient.from("credit_requests").select("id,request_no,customer_code,customer_name,status,approved_amount,approved_credit_days,receipt_update_open").eq("id",id).eq("branch_id",profile.branch_id).maybeSingle();
