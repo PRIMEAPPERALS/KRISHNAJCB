@@ -59,6 +59,7 @@
 <div id="customerError" class="error"></div>
 </div></div>
 </main></div>
+<div class="cooModal" id="cooReviewModal"><div class="cooModalBox"><div class="cooModalHead"><h2 id="cooReviewTitle">Credit Request Review</h2><button class="cooClose" onclick="closeCooReview()">✕ Close</button></div><div id="cooReviewContent"></div></div></div>
 <script>
 const U="https://vqcsxozodlduvzwqumoz.supabase.co",K="sb_publishable_w8FhItbY8LzQdwXfK74hAQ_eO2mYDaY";const s=window.supabase.createClient(U,K);
 let editingCustomer=null;
@@ -108,7 +109,7 @@ async function loadAdminManagement(){
  });
 }
 async function loadRequestsPanel(){
- const r=await s.from("credit_requests").select("request_no,customer_name,requested_amount,status,created_at,submitted_at").order("created_at",{ascending:false});
+ const r=await s.from("credit_requests").select("id,request_no,customer_name,requested_amount,status,created_at,submitted_at").order("created_at",{ascending:false});
  if(r.error){document.getElementById("requests").textContent="Unable to load requests: "+r.error.message;return;}
  const rows=r.data||[];
  document.getElementById("total").textContent=rows.length;
@@ -191,7 +192,7 @@ async function openCooReview(id){
   "<div><label>Approved Amount</label><input id='cooReviewAmount' type='number' min='0.01' step='0.01' value='"+(x.approved_amount||x.requested_amount)+"'></div>"+
   "<div><label>Approved Credit Days</label><input id='cooReviewDays' type='number' min='0' step='1' value='"+(x.approved_credit_days??x.requested_credit_days)+"'></div>"+
   "<div style='grid-column:1/-1'><label>Remarks / Reason</label><textarea id='cooReviewRemarks' placeholder='Optional for approval; mandatory reason for Hold/Reject'></textarea></div></div>"+
-  "<div class='cooActions'><button class='cooApprove' onclick='cooDecide("+x.id+","APPROVE")'>Approve</button><button class='cooHold' onclick='cooDecide("+x.id+","HOLD")'>Hold</button><button class='cooReject' onclick='cooDecide("+x.id+","REJECT")'>Reject</button></div></div>";
+  "<div class='cooActions'><button class='cooApprove' onclick='cooDecide("+x.id+",&quot;APPROVE&quot;)'>Approve</button><button class='cooHold' onclick='cooDecide("+x.id+",&quot;HOLD&quot;)'>Hold</button><button class='cooReject' onclick='cooDecide("+x.id+",&quot;REJECT&quot;)'>Reject</button></div></div>";
  }else{
   html+="<div class='cooReview'><strong>Decision completed</strong><p style='color:var(--muted)'>This request is already "+esc(x.status)+". Another approver cannot make a second decision.</p></div>";
  }
