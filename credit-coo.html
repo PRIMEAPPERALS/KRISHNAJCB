@@ -214,8 +214,8 @@ async function loadCooReports(){
  const from=year+"-01-01T00:00:00";
  const to=(year+1)+"-01-01T00:00:00";
  try{
-  const requests=await fetchAllRows("credit_requests","id,branch_id,requested_amount,approved_amount,approved_credit_days,status,customer_code,customer_name,created_at,submitted_at,decision_at");
-  const invoices=await fetchAllRows("credit_invoices","id,request_id,invoice_amount,invoice_date");
+  const requests=await fetchAllRows("credit_requests","id,request_no,branch_id,requested_amount,approved_amount,approved_credit_days,status,customer_code,customer_name,created_at,submitted_at,decision_at");
+  const invoices=await fetchAllRows("credit_invoices","id,request_id,invoice_no,invoice_amount,invoice_date,due_date");
   const receipts=await fetchAllRows("credit_receipts","id,invoice_id,received_amount,receipt_date");
   const branchesR=await s.from("credit_branches").select("id,branch_name,branch_code").order("branch_name");
   if(branchesR.error)throw branchesR.error;
