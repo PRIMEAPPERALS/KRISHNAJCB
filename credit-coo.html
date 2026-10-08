@@ -28,8 +28,8 @@
 
 <section class="panel" id="paymentSection" style="display:none">
 <div class="title"><div><h2 style="margin:0">Payment Tracking</h2><p class="muted">Invoice, receipt and pending payment overview across all branches.</p></div></div>
-<div class="cards" style="margin:15px 0"><div class="card"><div class="muted">Total Invoiced</div><div class="num" id="cooInvoiced">₹0</div></div><div class="card"><div class="muted">Total Received</div><div class="num" id="cooReceived">₹0</div></div><div class="card"><div class="muted">Total Pending</div><div class="num" id="cooPending">₹0</div></div></div>
-<div style="overflow:auto"><table><thead><tr><th>Request</th><th>Customer</th><th>Branch</th><th>Invoices</th><th>Invoiced</th><th>Received</th><th>Pending</th><th>Status</th></tr></thead><tbody id="cooPaymentRows"></tbody></table></div>
+<div class="cards" style="margin:15px 0"><div class="card"><div class="muted">Total Approved Credit</div><div class="num" id="cooApprovedCredit">₹0</div></div><div class="card"><div class="muted">Total Invoiced</div><div class="num" id="cooInvoiced">₹0</div></div><div class="card"><div class="muted">Total Received</div><div class="num" id="cooReceived">₹0</div></div><div class="card"><div class="muted">Total Pending</div><div class="num" id="cooPending">₹0</div></div><div class="card"><div class="muted">Unutilized Approved Credit</div><div class="num" id="cooUnutilized">₹0</div></div></div>
+<div style="overflow:auto"><table><thead><tr><th>Request</th><th>Customer</th><th>Branch</th><th>Approved Credit</th><th>Invoices</th><th>Invoiced</th><th>Unutilized</th><th>Received</th><th>Pending</th><th>Status</th></tr></thead><tbody id="cooPaymentRows"></tbody></table></div>
 </section>
 
 <section class="panel" id="customerSection" style="display:none">
@@ -123,16 +123,34 @@ async function loadRequestsPanel(){
 }
 async function loadCooPayments(){
  const r=await s.from("credit_request_payment_summary").select("request_id,request_no,branch_id,customer_code,customer_name,status,invoice_count,total_invoiced,total_received,total_pending").order("request_id",{ascending:false}).limit(500);
- if(r.error){document.getElementById("cooPaymentRows").innerHTML="<tr><td colspan='8'>"+esc(r.error.message)+"</td></tr>";return}
+ if(r.error){document.getElementById("cooPaymentRows").innerHTML="<tr><td colspan='10'>"+esc(r.error.message)+"</td></tr>";return}
  const rows=r.data||[];
+ const ids=rows.map(x=>x.request_id).filter(Boolean);
+ let approvedMap={};
+ if(ids.length){
+  const q=await s.from("credit_requests").select("id,approved_amount").in("id",ids);
+  if(q.error){document.getElementById("cooPaymentRows").innerHTML="<tr><td colspan='10'>"+esc(q.error.message)+"</td></tr>";return}
+  (q.data||[]).forEach(x=>approvedMap[x.id]=Number(x.approved_amount||0));
+ }
  const branchIds=[...new Set(rows.map(x=>x.branch_id).filter(Boolean))];let bm={};
  if(branchIds.length){const b=await s.from("credit_branches").select("id,branch_name,branch_code").in("id",branchIds);(b.data||[]).forEach(x=>bm[x.id]=x.branch_name+" • "+x.branch_code)}
- const invoiced=rows.reduce((a,x)=>a+Number(x.total_invoiced||0),0),received=rows.reduce((a,x)=>a+Number(x.total_received||0),0),pending=rows.reduce((a,x)=>a+Number(x.total_pending||0),0);
+ const approved=rows.reduce((a,x)=>a+(approvedMap[x.request_id]||0),0);
+ const invoiced=rows.reduce((a,x)=>a+Number(x.total_invoiced||0),0);
+ const received=rows.reduce((a,x)=>a+Number(x.total_received||0),0);
+ const pending=rows.reduce((a,x)=>a+Number(x.total_pending||0),0);
+ const unutilized=Math.max(approved-invoiced,0);
+ document.getElementById("cooApprovedCredit").textContent=money(approved);
  document.getElementById("cooInvoiced").textContent=money(invoiced);
  document.getElementById("cooReceived").textContent=money(received);
  document.getElementById("cooPending").textContent=money(pending);
- document.getElementById("cooPaymentRows").innerHTML=rows.filter(x=>Number(x.invoice_count)>0).map(x=>"<tr><td><strong>"+esc(x.request_no)+"</strong></td><td>"+esc(x.customer_name)+"<br><small>"+esc(x.customer_code||"")+"</small></td><td>"+esc(bm[x.branch_id]||"")+"</td><td>"+x.invoice_count+"</td><td>"+money(x.total_invoiced)+"</td><td>"+money(x.total_received)+"</td><td>"+money(x.total_pending)+"</td><td>"+esc(x.status)+"</td></tr>").join("")||"<tr><td colspan='8'>No invoice records found.</td></tr>";
+ document.getElementById("cooUnutilized").textContent=money(unutilized);
+ document.getElementById("cooPaymentRows").innerHTML=rows.filter(x=>Number(x.invoice_count)>0).map(x=>{
+  const ac=approvedMap[x.request_id]||0;
+  const un=Math.max(ac-Number(x.total_invoiced||0),0);
+  return "<tr><td><strong>"+esc(x.request_no)+"</strong></td><td>"+esc(x.customer_name)+"<br><small>"+esc(x.customer_code||"")+"</small></td><td>"+esc(bm[x.branch_id]||"")+"</td><td>"+money(ac)+"</td><td>"+x.invoice_count+"</td><td>"+money(x.total_invoiced)+"</td><td>"+money(un)+"</td><td>"+money(x.total_received)+"</td><td>"+money(x.total_pending)+"</td><td>"+esc(x.status)+"</td></tr>";
+ }).join("")||"<tr><td colspan='10'>No invoice records found.</td></tr>";
 }
+
 async function loadAuditLog(){
  const r=await s.from("credit_user_audit")
    .select("target_user_id,action,reason,action_by,created_at")
