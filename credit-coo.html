@@ -21,8 +21,8 @@ table{width:100%;border-collapse:separate;border-spacing:0}th,td{text-align:left
 @media(max-width:1000px){aside{width:220px}main{padding:24px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:750px){header{height:70px;padding:0 18px}.brand{font-size:18px}.layout{min-height:calc(100vh - 70px)}aside{display:none}.cards{grid-template-columns:1fr 1fr}main{padding:18px}.title{display:block}.title .btn{margin-top:12px}}
 @media(max-width:520px){.cards{grid-template-columns:1fr}.panel{padding:16px}.cooDetailGrid{grid-template-columns:1fr}th,td{padding:11px 9px}.user{font-size:12px}}
-</style></head><body>
-<header><div class="brand">KRISHNA AUTOMOBILES<small>CREDIT PORTAL • COO CONTROL</small></div><div class="user" id="user">COO</div></header>
+.notifyBtn{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:9px 12px;cursor:pointer;font-weight:800}.notifyBtn span{display:inline-flex;min-width:20px;height:20px;padding:0 5px;align-items:center;justify-content:center;border-radius:20px;background:#ef4444;font-size:11px;margin-left:4px}.notifyModal{display:none;position:fixed;inset:0;background:rgba(3,15,30,.58);backdrop-filter:blur(3px);z-index:50;padding:20px}.notifyBox{max-width:650px;margin:60px auto;background:#fff;border-radius:16px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.notifyItem{padding:13px;border-bottom:1px solid var(--line)}.notifyItem.unread{background:#eff6ff}.notifyHead{display:flex;justify-content:space-between;align-items:center;gap:10px}.notifyClose{background:#eef2f7;border:0;border-radius:8px;padding:8px 11px;cursor:pointer}</style></head><body>
+<header><div class="brand">KRISHNA AUTOMOBILES<small>CREDIT PORTAL • COO CONTROL</small></div><div style="display:flex;align-items:center;gap:14px"><button id="portalNotifyBtn" class="notifyBtn" onclick="openPortalNotifications()">🔔 <span id="portalNotifyCount">0</span></button><div class="user" id="user">COO</div></div></header>
 <div class="layout"><aside>
 <div class="nav active" data-section="dashboard" onclick="showSection('dashboard')">▦ Dashboard</div>
 <div class="nav" data-section="requests" onclick="showSection('requests')">▣ Credit Requests</div>
@@ -33,7 +33,7 @@ table{width:100%;border-collapse:separate;border-spacing:0}th,td{text-align:left
 <div class="nav" data-section="audit" onclick="showSection('audit')">▤ Audit Log</div>
 <div class="nav logout" id="logout">↪ Logout</div>
 </aside>
-<main>
+<div class="notifyModal" id="notifyModal"><div class="notifyBox"><div class="notifyHead"><h2 style="margin:0">Notifications</h2><div><button class="btn" onclick="markPortalNotificationsRead()">Mark all read</button> <button class="notifyClose" onclick="closePortalNotifications()">✕</button></div></div><div id="notifyList" style="margin-top:12px"></div></div></div><main>
 <div id="dashboardSection">
 <div class="title"><div><h1>COO Dashboard</h1><p>Credit approval oversight and administrator control.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="createInvite('ADMIN_1')">＋ Admin 1 Invitation</button><button class="btn primary" onclick="createInvite('ADMIN_2')">＋ Admin 2 Invitation</button></div></div>
 <div class="cards"><div class="card"><div class="muted">Pending Approval</div><div class="num" id="pending">0</div></div><div class="card"><div class="muted">Active Admins</div><div class="num" id="admins">0</div></div><div class="card"><div class="muted">Total Requests</div><div class="num" id="total">0</div></div></div>
@@ -452,8 +452,24 @@ async function saveCustomer(){
  if(r.error){msg("customerError",r.error.message);return}
  closeCustomerModal();await loadCustomers();
 }
-async function createInvite(slot){document.getElementById("linkMsg").style.display="none";document.getElementById("linkError").style.display="none";const r=await s.rpc("credit_coo_create_admin_invite",{p_admin_slot:slot,p_valid_days:7});if(r.error){msg("linkError",r.error.message);return}const row=Array.isArray(r.data)?r.data[0]:r.data;if(!row){msg("linkError","Invitation was not created.");return}const link=location.origin+"/credit-admin-register.html?invite="+row.invite_token;document.getElementById("inviteLink").value=link;document.getElementById("linkArea").style.display="flex";msg("linkMsg",row.admin_slot.replace("_"," ")+" invitation created. It expires in 7 days and can be used once.");}
+async function createInvite(slot){document.getElementById("linkMsg").style.display="none";document.getElementById("linkError").style.display="none";const r=await s.rpc("credit_coo_create_admin_invite",{p_admin_slot:slot,p_valid_days:7});if(r.error){msg("linkError",r.error.message);return}const row=Array.isArray(r.data)?r.data[0]:r.data;if(!row){msg("linkError","Invitation was not created.");return}const link=location.origin+"/credit-admin-register.html?invite="+row.invite_token;document.getElementById("inviteLink").value=link;document.getElementById("linkArea").style.display="flex";msg("linkMsg",row.invite_admin_slot.replace("_"," ")+" invitation created. It expires in 7 days and can be used once.");}
 async function copyLink(){const input=document.getElementById("inviteLink");await navigator.clipboard.writeText(input.value);msg("linkMsg","Invitation link copied. Share it with the administrator.");}
 async function control(id,action){const reason=prompt("Reason for this change:");if(!reason||!reason.trim()){alert("Reason is mandatory.");return}const r=await s.rpc("credit_coo_control_user",{p_user_id:id,p_action:action,p_reason:reason.trim()});if(r.error){alert(r.error.message);return}await load()}
-document.getElementById("logout").onclick=async()=>{await s.auth.signOut();location.href="credit-login.html"};load();
+async function loadPortalNotifications(){
+ const r=await s.from("credit_notifications").select("id,title,message,is_read,created_at,notification_type").order("created_at",{ascending:false}).limit(50);
+ if(r.error)return;
+ const rows=r.data||[],unread=rows.filter(x=>!x.is_read).length;
+ const b=document.getElementById("portalNotifyCount");if(b)b.textContent=unread;
+ const list=document.getElementById("notifyList");
+ if(list)list.innerHTML=rows.map(x=>"<div class='notifyItem "+(x.is_read?"":"unread")+"'><strong>"+esc(x.title||x.notification_type||"Notification")+"</strong><div style='margin-top:5px'>"+esc(x.message||"")+"</div><small class='muted'>"+new Date(x.created_at).toLocaleString("en-IN")+"</small></div>").join("")||"<div class='muted' style='padding:20px'>No notifications.</div>";
+}
+async function openPortalNotifications(){await loadPortalNotifications();document.getElementById("notifyModal").style.display="block";}
+function closePortalNotifications(){document.getElementById("notifyModal").style.display="none";}
+async function markPortalNotificationsRead(){
+ const r=await s.from("credit_notifications").update({is_read:true,read_at:new Date().toISOString()}).eq("recipient_user_id",(await s.auth.getUser()).data.user.id).eq("is_read",false);
+ if(r.error){alert(r.error.message);return}
+ await loadPortalNotifications();
+}
+setInterval(loadPortalNotifications,30000);
+document.getElementById("logout").onclick=async()=>{await s.auth.signOut();location.href="credit-login.html"};loadPortalNotifications();load();
 </script></body></html>
