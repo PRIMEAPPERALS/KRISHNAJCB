@@ -195,7 +195,8 @@ let cooAgingRows=[];
 function parseLocalDate(s){return s?new Date(s+"T00:00:00"):null}
 function ageForInvoice(invoiceDate,dueDate,approvedDays){
  const inv=parseLocalDate(invoiceDate);
- const due=dueDate?parseLocalDate(dueDate):(inv?new Date(inv.getTime()+Number(approvedDays||0)*86400000):null);
+ const days=Number(approvedDays||0);
+ const due=inv?new Date(inv.getTime()+days*86400000):null;
  const today=new Date();today.setHours(0,0,0,0);
  return {due,dueDays:due?Math.max(0,Math.floor((today-due)/86400000)):0,overdue:!!due&&today>due};
 }
