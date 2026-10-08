@@ -73,7 +73,7 @@ table{width:100%;border-collapse:separate;border-spacing:0}th,td{text-align:left
 <input id="customerSearch" placeholder="Search customer code or name..." oninput="loadCustomers()" style="flex:1;min-width:240px;padding:11px;border:1px solid #d6dce5;border-radius:8px">
 <button class="btn primary" onclick="loadCustomers()">Search</button>
 </div>
-<div style="overflow:auto"><table><thead><tr><th>Customer</th><th>Branch</th><th>Credit Limit</th><th>Outstanding</th><th>Available</th><th>Credit Days</th><th>Status</th><th>Action</th></tr></thead><tbody id="customerRows"></tbody></table></div>
+<div style="overflow:auto"><table><thead><tr><th>Customer</th><th>Branch</th><th>Credit Limit</th><th>Opening Outstanding</th><th>Pending Invoices</th><th>Current Outstanding</th><th>Available</th><th>Credit Days</th><th>Status</th><th>Action</th></tr></thead><tbody id="customerRows"></tbody></table></div>
 </section>
 
 <div id="customerModal" style="display:none;position:fixed;inset:0;background:#0008;z-index:10;padding:20px;overflow:auto">
@@ -431,7 +431,7 @@ async function loadCustomers(){
  const branchIds=[...new Set(rows.map(x=>x.branch_id).filter(Boolean))];
  let branches={};
  if(branchIds.length){const b=await s.from("credit_branches").select("id,branch_name,branch_code").in("id",branchIds);(b.data||[]).forEach(x=>branches[x.id]=x.branch_name+" • "+x.branch_code)}
- document.getElementById("customerRows").innerHTML=rows.map(x=>"<tr><td><strong>"+esc(x.customer_name)+"</strong><br><small>"+esc(x.customer_code)+"</small></td><td>"+esc(branches[x.branch_id]||"")+"</td><td>"+money(x.credit_limit)+"</td><td>"+money(x.opening_outstanding)+"</td><td>"+money(x.pending_invoice_amount)+"</td><td><strong>"+money(x.current_outstanding)+"</strong></td><td><strong>"+money(x.available_credit)+"</strong></td><td>"+x.credit_days+"</td><td>"+(x.is_active?"<span class='toggle on'>ACTIVE</span>":"<span class='toggle off'>INACTIVE</span>")+"</td><td><button class='btn primary' onclick='editCustomer("+x.id+")'>Edit</button></td></tr>").join("")||"<tr><td colspan='8'>No customers found.</td></tr>";
+ document.getElementById("customerRows").innerHTML=rows.map(x=>"<tr><td><strong>"+esc(x.customer_name)+"</strong><br><small>"+esc(x.customer_code)+"</small></td><td>"+esc(branches[x.branch_id]||"")+"</td><td>"+money(x.credit_limit)+"</td><td>"+money(x.opening_outstanding)+"</td><td>"+money(x.pending_invoice_amount)+"</td><td><strong>"+money(x.current_outstanding)+"</strong></td><td><strong>"+money(x.available_credit)+"</strong></td><td>"+x.credit_days+"</td><td>"+(x.is_active?"<span class='toggle on'>ACTIVE</span>":"<span class='toggle off'>INACTIVE</span>")+"</td><td><button class='btn primary' onclick='editCustomer("+x.id+")'>Edit</button></td></tr>").join("")||"<tr><td colspan='10'>No customers found.</td></tr>";
 }
 async function editCustomer(id){
  const r=await s.from("credit_customer_credit_status").select("id,customer_code,customer_name,credit_limit,opening_outstanding,current_outstanding,pending_invoice_amount,credit_days,is_active,remarks").eq("id",id).maybeSingle();
