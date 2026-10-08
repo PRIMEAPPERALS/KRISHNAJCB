@@ -196,9 +196,17 @@ async function openCooReview(id){
  }else{
   html+="<div class='cooReview'><strong>Decision completed</strong><p style='color:var(--muted)'>This request is already "+esc(x.status)+". Another approver cannot make a second decision.</p></div>";
  }
+ const docs=await s.from("credit_request_documents").select("id,file_name,file_type,file_size,storage_path,created_at").eq("request_id",id).order("created_at",{ascending:true});
+ const docRows=docs.data||[];
+ html+="<div class='cooReview'><h3 style='margin-top:0'>Invoices / Invoice Copies</h3>"+(docRows.length?docRows.map(d=>"<div style='display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)'><div><strong>"+esc(d.file_name)+"</strong><br><small style='color:var(--muted)'>"+(Number(d.file_size||0)/1024/1024).toFixed(2)+" MB • "+new Date(d.created_at).toLocaleString("en-IN")+"</small></div><button class='cooView' onclick='viewCooDocument(&quot;"+esc(d.storage_path)+"&quot;)'>View</button></div>").join(""):"<div class='muted'>No invoice copy uploaded yet.</div>")+"</div>";
  html+="<div class='cooHistory'><h3>Approval History</h3>"+(history.length?history.map(y=>"<div class='cooHistoryItem'><strong>"+esc(y.action)+"</strong> • "+new Date(y.created_at).toLocaleString("en-IN")+(y.reason?"<br>Reason: "+esc(y.reason):"")+(y.remarks?"<br>Remarks: "+esc(y.remarks):"")+(y.approved_amount!=null?"<br>Approved: "+money(y.approved_amount):"")+"</div>").join(""):"<div class='muted'>No history.</div>")+"</div>";
  document.getElementById("cooReviewContent").innerHTML=html;
  document.getElementById("cooReviewModal").style.display="block";
+}
+async function viewCooDocument(path){
+ const r=await s.storage.from("credit-documents").createSignedUrl(path,600);
+ if(r.error){alert("Unable to open invoice/document: "+r.error.message);return;}
+ window.open(r.data.signedUrl,"_blank","noopener");
 }
 async function branchName(id){
  if(!id)return "";
