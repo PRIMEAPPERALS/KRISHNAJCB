@@ -22,7 +22,31 @@ table{width:100%;border-collapse:separate;border-spacing:0}th,td{text-align:left
 @media(max-width:1000px){aside{width:220px}main{padding:24px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:750px){header{height:70px;padding:0 18px}.brand{font-size:18px}.layout{min-height:calc(100vh - 70px)}aside{display:none}.cards{grid-template-columns:1fr 1fr}main{padding:18px}.title{display:block}.title .btn{margin-top:12px}}
 @media(max-width:520px){.cards{grid-template-columns:1fr}.panel{padding:16px}.cooDetailGrid{grid-template-columns:1fr}th,td{padding:11px 9px}.user{font-size:12px}}
-.notifyBtn{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:9px 12px;cursor:pointer;font-weight:800}.notifyBtn span{display:inline-flex;min-width:20px;height:20px;padding:0 5px;align-items:center;justify-content:center;border-radius:20px;background:#ef4444;font-size:11px;margin-left:4px}.notifyModal{display:none;position:fixed;inset:0;background:rgba(3,15,30,.58);backdrop-filter:blur(3px);z-index:50;padding:20px}.notifyBox{max-width:650px;margin:60px auto;background:#fff;border-radius:16px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.notifyItem{padding:13px;border-bottom:1px solid var(--line)}.notifyItem.unread{background:#eff6ff}.notifyHead{display:flex;justify-content:space-between;align-items:center;gap:10px}.notifyClose{background:#eef2f7;border:0;border-radius:8px;padding:8px 11px;cursor:pointer}</style></head><body>
+.notifyBtn{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:9px 12px;cursor:pointer;font-weight:800}.notifyBtn span{display:inline-flex;min-width:20px;height:20px;padding:0 5px;align-items:center;justify-content:center;border-radius:20px;background:#ef4444;font-size:11px;margin-left:4px}.notifyModal{display:none;position:fixed;inset:0;background:rgba(3,15,30,.58);backdrop-filter:blur(3px);z-index:50;padding:20px}.notifyBox{max-width:650px;margin:60px auto;background:#fff;border-radius:16px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.notifyItem{padding:13px;border-bottom:1px solid var(--line)}.notifyItem.unread{background:#eff6ff}.notifyHead{display:flex;justify-content:space-between;align-items:center;gap:10px}.notifyClose{background:#eef2f7;border:0;border-radius:8px;padding:8px 11px;cursor:pointer}
+header{background:#ffffff!important;color:#242424!important;border-bottom:1px solid #e1dfdd!important;box-shadow:0 1px 4px rgba(0,0,0,.08)!important}
+.brand{color:#242424!important}.brand small{color:#616161!important;opacity:1!important}
+aside{background:#ffffff!important;color:#242424!important;border-right:1px solid #e1dfdd!important;box-shadow:none!important}
+.nav{color:#424242!important;border-radius:6px!important}
+.nav:hover{background:#f3f2f1!important;color:#242424!important}
+.nav.active{background:#e8f3fb!important;color:#0f6cbd!important;box-shadow:none!important}
+
+/* Windows 365 / Microsoft Fluent-inspired visual system */
+:root{
+ --fluent-blue:#0f6cbd;--fluent-blue-hover:#115ea3;--fluent-bg:#f5f5f5;
+ --fluent-surface:#ffffff;--fluent-text:#242424;--fluent-muted:#616161;
+ --fluent-border:#e1dfdd;--fluent-shadow:0 2px 8px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.05);
+ --fluent-radius:8px;
+}
+body{font-family:"Segoe UI",Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif!important;background:var(--fluent-bg)!important;color:var(--fluent-text)!important}
+button,.btn,input,select,textarea{font-family:inherit!important}
+button,.btn{border-radius:6px!important;transition:background .15s,box-shadow .15s,transform .15s!important}
+button:hover,.btn:hover{transform:none!important}
+input,select,textarea{border:1px solid #d1d1d1!important;border-radius:6px!important;background:#fff!important;color:#242424!important}
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--fluent-blue)!important;box-shadow:0 0 0 1px var(--fluent-blue)!important}
+table th{background:#faf9f8!important;color:#616161!important;font-weight:600!important}
+table tbody tr:hover{background:#f3f9fd!important}
+.panel,.card,.kpi,.stat,.action,.welcome{border:1px solid var(--fluent-border)!important;border-radius:8px!important;box-shadow:var(--fluent-shadow)!important}
+</style></head><body>
 <header><div class="brand">KRISHNA AUTOMOBILES<small>CREDIT PORTAL • COO CONTROL</small></div><div style="display:flex;align-items:center;gap:14px"><button id="portalNotifyBtn" class="notifyBtn" onclick="openPortalNotifications()">🔔 <span id="portalNotifyCount">0</span></button><div class="user" id="user">COO</div></div></header>
 <div class="layout"><aside>
 <div class="nav active" data-section="dashboard" onclick="showSection('dashboard')">▦ Dashboard</div>
