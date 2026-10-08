@@ -11,6 +11,7 @@
 <div class="nav" data-section="requests" onclick="showSection('requests')">▣ Credit Requests</div>
 <div class="nav" data-section="customers" onclick="showSection('customers')">◉ Customer Master</div>
 <div class="nav" data-section="payments" onclick="showSection('payments')">₹ Payment Tracking</div>
+<div class="nav" data-section="reports" onclick="showSection('reports')">▥ Reports & Analytics</div>
 <div class="nav" data-section="admin" onclick="showSection('admin')">♙ Admin Management</div>
 <div class="nav" data-section="audit" onclick="showSection('audit')">▤ Audit Log</div>
 <div class="nav logout" id="logout">↪ Logout</div>
@@ -32,6 +33,21 @@
 <div style="overflow:auto"><table><thead><tr><th>Request</th><th>Customer</th><th>Branch</th><th>Approved Credit</th><th>Invoices</th><th>Invoiced</th><th>Unutilized</th><th>Received</th><th>Pending</th><th>Status</th></tr></thead><tbody id="cooPaymentRows"></tbody></table></div>
 </section>
 
+<section class="panel" id="reportsSection" style="display:none">
+<div class="title"><div><h2 style="margin:0">Credit Reports & Analytics</h2><p class="muted">Complete month-wise, year-wise and branch-wise credit tracking.</p></div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label class="muted">Year <select id="reportYear" onchange="loadCooReports()" style="padding:9px;border:1px solid #d6dce5;border-radius:8px"></select></label><button class="btn primary" onclick="loadCooReports()">Refresh</button></div></div>
+<div class="cards" style="margin:15px 0">
+<div class="card"><div class="muted">Credit Requested</div><div class="num" id="repRequested">₹0</div></div>
+<div class="card"><div class="muted">Credit Approved</div><div class="num" id="repApproved">₹0</div></div>
+<div class="card"><div class="muted">Invoiced / Utilized</div><div class="num" id="repInvoiced">₹0</div></div>
+<div class="card"><div class="muted">Unutilized Credit</div><div class="num" id="repUnutilized">₹0</div></div>
+<div class="card"><div class="muted">Received</div><div class="num" id="repReceived">₹0</div></div>
+<div class="card"><div class="muted">Pending Collection</div><div class="num" id="repPending">₹0</div></div>
+</div>
+<section class="panel"><h2>Month-wise Credit Tracking — All Branches</h2><div style="overflow:auto"><table><thead><tr><th>Month</th><th>Requests</th><th>Requested</th><th>Approved</th><th>Invoiced</th><th>Unutilized</th><th>Received</th><th>Pending</th></tr></thead><tbody id="reportMonthRows"></tbody></table></div></section>
+<section class="panel"><h2>Branch-wise Yearly Summary</h2><div style="overflow:auto"><table><thead><tr><th>Branch</th><th>Requests</th><th>Requested</th><th>Approved</th><th>Invoiced</th><th>Unutilized</th><th>Received</th><th>Pending</th></tr></thead><tbody id="reportBranchRows"></tbody></table></div></section>
+<section class="panel"><h2>Branch × Month Tracking</h2><p class="muted">Approved credit, invoices and receipts by branch and month.</p><div style="overflow:auto"><table><thead><tr><th>Branch</th><th>Month</th><th>Approved</th><th>Invoiced</th><th>Received</th><th>Pending</th></tr></thead><tbody id="reportBranchMonthRows"></tbody></table></div></section>
+</section>
 <section class="panel" id="customerSection" style="display:none">
 <div class="title"><div><h2 style="margin:0">Customer Master</h2><p class="muted">Manage customer credit limits, outstanding and credit days.</p></div></div>
 <div style="display:flex;gap:10px;margin:15px 0;flex-wrap:wrap">
@@ -69,6 +85,7 @@ function showSection(name){
   requests:"requestsSection",
   customers:"customerSection",
   payments:"paymentSection",
+  reports:"reportsSection",
   admin:"adminSection",
   audit:"auditSection"
  };
@@ -85,6 +102,7 @@ function showSection(name){
 
  if(name==="customers")loadCustomers();
  if(name==="payments")loadCooPayments();
+ if(name==="reports")loadCooReports();
  if(name==="audit")loadAuditLog();
  if(name==="admin")loadAdminManagement();
  if(name==="requests")loadRequestsPanel();
@@ -151,6 +169,94 @@ async function loadCooPayments(){
  }).join("")||"<tr><td colspan='10'>No invoice records found.</td></tr>";
 }
 
+function reportYears(){
+ const y=new Date().getFullYear(),sel=document.getElementById("reportYear");
+ if(!sel)return;
+ if(!sel.options.length)for(let i=y;i>=y-5;i--){const o=document.createElement("option");o.value=i;o.textContent=i;sel.appendChild(o);}
+}
+async function fetchAllRows(table,columns,filters){
+ let all=[],from=0,step=1000;
+ while(true){
+  let q=s.from(table).select(columns).range(from,from+step-1);
+  if(filters)filters(q);
+  const r=await q;
+  if(r.error)throw r.error;
+  all=all.concat(r.data||[]);
+  if(!r.data||r.data.length<step)break;
+  from+=step;
+  if(from>50000)break;
+ }
+ return all;
+}
+function reportMonthKey(date){return date?String(date).slice(0,7):null}
+function reportMonthLabel(key){return new Date(key+"-01T00:00:00").toLocaleDateString("en-IN",{month:"short",year:"numeric"})}
+async function loadCooReports(){
+ reportYears();
+ const year=Number(document.getElementById("reportYear").value||new Date().getFullYear());
+ const from=year+"-01-01T00:00:00";
+ const to=(year+1)+"-01-01T00:00:00";
+ try{
+  const requests=await fetchAllRows("credit_requests","id,branch_id,requested_amount,approved_amount,status,created_at,submitted_at,decision_at");
+  const invoices=await fetchAllRows("credit_invoices","id,request_id,invoice_amount,invoice_date");
+  const receipts=await fetchAllRows("credit_receipts","id,invoice_id,received_amount,receipt_date");
+  const branchesR=await s.from("credit_branches").select("id,branch_name,branch_code").order("branch_name");
+  if(branchesR.error)throw branchesR.error;
+  const branches=branchesR.data||[],bm={};branches.forEach(b=>bm[b.id]=b.branch_name+" • "+b.branch_code);
+
+  const reqYear=requests.filter(x=>x.created_at>=from&&x.created_at<to);
+  const approvedYear=requests.filter(x=>x.approved_amount!=null&&x.decision_at>=from&&x.decision_at<to&&Number(x.approved_amount)>0);
+  const invYear=invoices.filter(x=>x.invoice_date>=from.slice(0,10)&&x.invoice_date<to.slice(0,10));
+  const invIds=new Set(invYear.map(x=>x.id));
+  const recYear=receipts.filter(x=>invIds.has(x.invoice_id)&&x.receipt_date>=from.slice(0,10)&&x.receipt_date<to.slice(0,10));
+  const approvedTotal=approvedYear.reduce((a,x)=>a+Number(x.approved_amount||0),0);
+  const requestedTotal=reqYear.reduce((a,x)=>a+Number(x.requested_amount||0),0);
+  const invoicedTotal=invYear.reduce((a,x)=>a+Number(x.invoice_amount||0),0);
+  const receivedTotal=recYear.reduce((a,x)=>a+Number(x.received_amount||0),0);
+  const pendingTotal=Math.max(invoicedTotal-receivedTotal,0);
+  const unutilizedTotal=Math.max(approvedTotal-invoicedTotal,0);
+  document.getElementById("repRequested").textContent=money(requestedTotal);
+  document.getElementById("repApproved").textContent=money(approvedTotal);
+  document.getElementById("repInvoiced").textContent=money(invoicedTotal);
+  document.getElementById("repUnutilized").textContent=money(unutilizedTotal);
+  document.getElementById("repReceived").textContent=money(receivedTotal);
+  document.getElementById("repPending").textContent=money(pendingTotal);
+
+  const months=Array.from({length:12},(_,i)=>year+"-"+String(i+1).padStart(2,"0"));
+  const monthData={};months.forEach(m=>monthData[m]={requests:0,requested:0,approved:0,invoiced:0,received:0});
+  reqYear.forEach(x=>{const k=reportMonthKey(x.created_at);if(monthData[k]){monthData[k].requests++;monthData[k].requested+=Number(x.requested_amount||0);}});
+  approvedYear.forEach(x=>{const k=reportMonthKey(x.decision_at);if(monthData[k])monthData[k].approved+=Number(x.approved_amount||0);});
+  invYear.forEach(x=>{const k=reportMonthKey(x.invoice_date);if(monthData[k])monthData[k].invoiced+=Number(x.invoice_amount||0);});
+  recYear.forEach(x=>{const k=reportMonthKey(x.receipt_date);if(monthData[k])monthData[k].received+=Number(x.received_amount||0);});
+  document.getElementById("reportMonthRows").innerHTML=months.map(k=>{
+   const x=monthData[k],un=Math.max(x.approved-x.invoiced,0),pend=Math.max(x.invoiced-x.received,0);
+   return "<tr><td><strong>"+reportMonthLabel(k)+"</strong></td><td>"+x.requests+"</td><td>"+money(x.requested)+"</td><td>"+money(x.approved)+"</td><td>"+money(x.invoiced)+"</td><td>"+money(un)+"</td><td>"+money(x.received)+"</td><td>"+money(pend)+"</td></tr>";
+  }).join("");
+
+  const branchData={};branches.forEach(b=>branchData[b.id]={requests:0,requested:0,approved:0,invoiced:0,received:0});
+  reqYear.forEach(x=>{if(branchData[x.branch_id]){branchData[x.branch_id].requests++;branchData[x.branch_id].requested+=Number(x.requested_amount||0);}});
+  approvedYear.forEach(x=>{if(branchData[x.branch_id])branchData[x.branch_id].approved+=Number(x.approved_amount||0);});
+  const requestBranch={};requests.forEach(x=>requestBranch[x.id]=x.branch_id);
+  invYear.forEach(x=>{const b=requestBranch[x.request_id];if(branchData[b])branchData[b].invoiced+=Number(x.invoice_amount||0);});
+  const invoiceRequest={};invoices.forEach(x=>invoiceRequest[x.id]=x.request_id);
+  recYear.forEach(x=>{const rid=invoiceRequest[x.invoice_id],b=requestBranch[rid];if(branchData[b])branchData[b].received+=Number(x.received_amount||0);});
+  document.getElementById("reportBranchRows").innerHTML=branches.map(b=>{
+   const x=branchData[b.id],un=Math.max(x.approved-x.invoiced,0),pend=Math.max(x.invoiced-x.received,0);
+   return "<tr><td><strong>"+esc(b.branch_name)+"</strong><br><small>"+esc(b.branch_code)+"</small></td><td>"+x.requests+"</td><td>"+money(x.requested)+"</td><td>"+money(x.approved)+"</td><td>"+money(x.invoiced)+"</td><td>"+money(un)+"</td><td>"+money(x.received)+"</td><td>"+money(pend)+"</td></tr>";
+  }).join("");
+
+  const bmRows=[];
+  branches.forEach(b=>months.forEach(k=>{
+   const approved=approvedYear.filter(x=>x.branch_id===b.id&&reportMonthKey(x.decision_at)===k).reduce((a,x)=>a+Number(x.approved_amount||0),0);
+   const binv=invYear.filter(x=>requestBranch[x.request_id]===b.id&&reportMonthKey(x.invoice_date)===k).reduce((a,x)=>a+Number(x.invoice_amount||0),0);
+   const brec=recYear.filter(x=>requestBranch[invoiceRequest[x.invoice_id]]===b.id&&reportMonthKey(x.receipt_date)===k).reduce((a,x)=>a+Number(x.received_amount||0),0);
+   if(approved||binv||brec)bmRows.push("<tr><td>"+esc(b.branch_name)+"</td><td>"+reportMonthLabel(k)+"</td><td>"+money(approved)+"</td><td>"+money(binv)+"</td><td>"+money(brec)+"</td><td>"+money(Math.max(binv-brec,0))+"</td></tr>");
+  }));
+  document.getElementById("reportBranchMonthRows").innerHTML=bmRows.join("")||"<tr><td colspan='6' class='muted'>No credit activity for the selected year.</td></tr>";
+ }catch(e){
+  const msg=esc(e.message||String(e));
+  ["reportMonthRows","reportBranchRows","reportBranchMonthRows"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML="<tr><td colspan='8' style='color:#b91c1c'>"+msg+"</td></tr>";});
+ }
+}
 async function loadAuditLog(){
  const r=await s.from("credit_user_audit")
    .select("target_user_id,action,reason,action_by,created_at")
@@ -248,6 +354,7 @@ async function cooDecide(id,action){
  if(result.error){alert(result.error.message);return}
  closeCooReview();
  await loadRequestsPanel();
+ reportYears();
 }
 
 function msg(id,t){const e=document.getElementById(id);e.textContent=t;e.style.display="block"}
