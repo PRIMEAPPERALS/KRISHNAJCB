@@ -4,7 +4,7 @@
 <style>
 :root{--navy:#14243a;--blue:#2563eb;--bg:#f4f7fb;--text:#172033;--muted:#687386;--line:#e5e9f0;--green:#059669;--red:#dc2626}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--text)}header{height:72px;background:var(--navy);color:#fff;padding:0 28px;display:flex;justify-content:space-between;align-items:center}.brand{font-size:20px;font-weight:800}.brand small{display:block;font-size:11px;opacity:.7;margin-top:3px}.user{font-size:13px}.layout{display:flex;min-height:calc(100vh - 72px)}aside{width:235px;background:#17283f;color:#fff;padding:22px 14px}.nav{padding:13px 14px;border-radius:9px;margin-bottom:5px;color:#dbe4f0;font-size:14px;cursor:pointer;transition:.15s}.nav:hover{background:#223b5d}.nav.active{background:var(--blue);color:#fff;font-weight:700}.logout{margin-top:25px;cursor:pointer}main{flex:1;padding:28px;max-width:1250px}.title{display:flex;justify-content:space-between;align-items:center;gap:15px}.title h1{margin:0;font-size:27px}.title p{color:var(--muted)}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin:22px 0}.card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px}.num{font-size:28px;font-weight:800;margin-top:8px}.muted{color:var(--muted);font-size:13px}.panel{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px;margin-bottom:18px}.panel h2{margin:0 0 15px;font-size:18px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px 9px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-size:12px}.toggle,.btn{padding:8px 12px;border:0;border-radius:8px;font-weight:700;cursor:pointer}.on{background:#dcfce7;color:#166534}.off{background:#fee2e2;color:#991b1b}.primary{background:var(--blue);color:#fff}.linkbox{display:flex;gap:8px;margin-top:15px}.linkbox input{flex:1;padding:11px;border:1px solid #d6dce5;border-radius:8px;font-size:13px}.success{display:none;margin-top:12px;background:#dcfce7;color:#166534;padding:11px;border-radius:8px;font-size:13px}.error{display:none;margin-top:12px;background:#fee2e2;color:#991b1b;padding:11px;border-radius:8px;font-size:13px}@media(max-width:750px){aside{display:none}.cards{grid-template-columns:1fr 1fr}main{padding:18px}.title{display:block}}@media(max-width:500px){.cards{grid-template-columns:1fr}}
-</style></head><body>
+.cooView{background:#fff;border:1px solid #cbd5e1;border-radius:7px;padding:7px 11px;cursor:pointer;font-weight:700;color:#1d4ed8}.cooModal{display:none;position:fixed;inset:0;background:#0008;z-index:20;padding:20px;overflow:auto}.cooModalBox{max-width:820px;margin:30px auto;background:#fff;border-radius:16px;padding:24px}.cooModalHead{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:15px}.cooModalHead h2{margin:0}.cooClose{background:#e5e7eb;border:0;border-radius:8px;padding:9px 13px;cursor:pointer}.cooDetailGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.cooDetail{background:#f8fafc;border-radius:10px;padding:13px}.cooDetail label{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.cooDetail strong{font-size:14px}.cooReview{margin-top:18px;padding:16px;background:#f8fafc;border-radius:12px}.cooReview input,.cooReview textarea{width:100%;padding:11px;border:1px solid #d7dce5;border-radius:8px;font-size:14px;margin-top:6px}.cooReview textarea{min-height:75px;resize:vertical}.cooActions{display:flex;gap:10px;margin-top:15px}.cooApprove,.cooHold,.cooReject{border:0;border-radius:8px;padding:9px 13px;font-weight:700;cursor:pointer}.cooApprove{background:#059669;color:#fff}.cooHold{background:#d97706;color:#fff}.cooReject{background:#dc2626;color:#fff}.cooHistory{margin-top:20px}.cooHistoryItem{padding:11px 0;border-bottom:1px solid var(--line);font-size:13px}</style></head><body>
 <header><div class="brand">KRISHNA AUTOMOBILES<small>CREDIT PORTAL • COO CONTROL</small></div><div class="user" id="user">COO</div></header>
 <div class="layout"><aside>
 <div class="nav active" data-section="dashboard" onclick="showSection('dashboard')">▦ Dashboard</div>
@@ -117,7 +117,7 @@ async function loadRequestsPanel(){
   const pending=x.status==="SUBMITTED"||x.status==="HOLD";
   const mins=pending?Math.max(0,Math.floor((Date.now()-new Date(x.submitted_at||x.created_at).getTime())/60000)):0;
   const age=pending?(Math.floor(mins/1440)+"d "+Math.floor((mins%1440)/60)+"h"):"-";
-  return "<div style='padding:10px 0;border-bottom:1px solid #eee'><strong>"+esc(x.request_no)+"</strong> — "+esc(x.customer_name)+" — ₹"+Number(x.requested_amount).toLocaleString("en-IN")+" — "+esc(x.status)+" — <span style='color:#6b7280'>Approval Age: "+age+"</span></div>";
+  return "<div style='padding:10px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;gap:12px'><div><strong>"+esc(x.request_no)+"</strong> — "+esc(x.customer_name)+" — ₹"+Number(x.requested_amount).toLocaleString("en-IN")+" — "+esc(x.status)+" — <span style='color:#6b7280'>Approval Age: "+age+"</span></div><button class='cooView' onclick='openCooReview("+x.id+")'>View</button></div>";
  }).join("")||"No requests yet.";
 }
 async function loadCooPayments(){
@@ -164,6 +164,65 @@ async function loadAuditLog(){
 }
 
 function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+async function openCooReview(id){
+ const r=await s.from("credit_requests").select("id,request_no,branch_id,customer_id,customer_code,customer_name,requested_amount,requested_credit_days,purpose,remarks,status,created_at,submitted_at,approved_amount,approved_credit_days,approval_remarks,decision_reason,decision_at").eq("id",id).maybeSingle();
+ if(r.error||!r.data){alert("Request could not be loaded.");return}
+ const x=r.data;
+ let customerStatus=null;
+ if(x.customer_id){
+  const cs=await s.from("credit_customer_credit_status").select("credit_limit,existing_outstanding,available_credit,credit_days,is_active").eq("id",x.customer_id).maybeSingle();
+  if(!cs.error)customerStatus=cs.data;
+ }
+ const h=await s.from("credit_approval_history").select("action,remarks,reason,approved_amount,approved_credit_days,created_at").eq("request_id",id).order("created_at",{ascending:true});
+ const history=h.data||[];
+ document.getElementById("cooReviewTitle").textContent=x.request_no+" • Credit Review";
+ let html="<div class='cooDetailGrid'>"+
+ "<div class='cooDetail'><label>Branch</label><strong>"+esc((await branchName(x.branch_id))||"-")+"</strong></div>"+
+ "<div class='cooDetail'><label>Customer Code</label><strong>"+esc(x.customer_code||"-")+"</strong></div>"+
+ "<div class='cooDetail'><label>Customer</label><strong>"+esc(x.customer_name)+"</strong></div>"+
+ "<div class='cooDetail'><label>Requested Amount</label><strong>"+money(x.requested_amount)+"</strong></div>"+
+ "<div class='cooDetail'><label>Requested Credit Days</label><strong>"+esc(x.requested_credit_days)+" days</strong></div>"+
+ "<div class='cooDetail'><label>Status</label><strong>"+esc(x.status)+"</strong></div>"+
+ (customerStatus?"<div class='cooDetail' style='grid-column:1/-1;background:#eef6ff'><label>Customer Credit Control</label><strong>Credit Limit: "+money(customerStatus.credit_limit)+" &nbsp; | &nbsp; Outstanding: "+money(customerStatus.existing_outstanding)+" &nbsp; | &nbsp; Available: "+money(customerStatus.available_credit)+" &nbsp; | &nbsp; Credit Days: "+esc(customerStatus.credit_days)+"</strong><div style='margin-top:7px;font-size:12px;color:"+(Number(x.requested_amount)>Number(customerStatus.available_credit)?"#b91c1c":"#047857")+"'>"+(Number(x.requested_amount)>Number(customerStatus.available_credit)?"Requested amount exceeds available credit.":"Requested amount is within available credit.")+"</div></div>":"<div class='cooDetail' style='grid-column:1/-1;background:#fff7ed'><label>Customer Credit Control</label><strong>Customer Master credit information is not available.</strong></div>")+
+ "<div class='cooDetail' style='grid-column:1/-1'><label>Purpose</label><strong>"+esc(x.purpose)+"</strong></div>"+
+ "<div class='cooDetail' style='grid-column:1/-1'><label>Remarks</label><strong>"+esc(x.remarks||"-")+"</strong></div></div>";
+ if(x.status==="SUBMITTED"||x.status==="HOLD"){
+  html+="<div class='cooReview'><strong>Decision</strong><div class='cooDetailGrid'>"+
+  "<div><label>Approved Amount</label><input id='cooReviewAmount' type='number' min='0.01' step='0.01' value='"+(x.approved_amount||x.requested_amount)+"'></div>"+
+  "<div><label>Approved Credit Days</label><input id='cooReviewDays' type='number' min='0' step='1' value='"+(x.approved_credit_days??x.requested_credit_days)+"'></div>"+
+  "<div style='grid-column:1/-1'><label>Remarks / Reason</label><textarea id='cooReviewRemarks' placeholder='Optional for approval; mandatory reason for Hold/Reject'></textarea></div></div>"+
+  "<div class='cooActions'><button class='cooApprove' onclick='cooDecide("+x.id+","APPROVE")'>Approve</button><button class='cooHold' onclick='cooDecide("+x.id+","HOLD")'>Hold</button><button class='cooReject' onclick='cooDecide("+x.id+","REJECT")'>Reject</button></div></div>";
+ }else{
+  html+="<div class='cooReview'><strong>Decision completed</strong><p style='color:var(--muted)'>This request is already "+esc(x.status)+". Another approver cannot make a second decision.</p></div>";
+ }
+ html+="<div class='cooHistory'><h3>Approval History</h3>"+(history.length?history.map(y=>"<div class='cooHistoryItem'><strong>"+esc(y.action)+"</strong> • "+new Date(y.created_at).toLocaleString("en-IN")+(y.reason?"<br>Reason: "+esc(y.reason):"")+(y.remarks?"<br>Remarks: "+esc(y.remarks):"")+(y.approved_amount!=null?"<br>Approved: "+money(y.approved_amount):"")+"</div>").join(""):"<div class='muted'>No history.</div>")+"</div>";
+ document.getElementById("cooReviewContent").innerHTML=html;
+ document.getElementById("cooReviewModal").style.display="block";
+}
+async function branchName(id){
+ if(!id)return "";
+ const b=await s.from("credit_branches").select("branch_name,branch_code").eq("id",id).maybeSingle();
+ return b.data?(b.data.branch_name+" • "+b.data.branch_code):"";
+}
+function closeCooReview(){document.getElementById("cooReviewModal").style.display="none";}
+async function cooDecide(id,action){
+ let result;
+ if(action==="APPROVE"){
+  const amount=Number(document.getElementById("cooReviewAmount").value);
+  const days=Number(document.getElementById("cooReviewDays").value);
+  const remarks=document.getElementById("cooReviewRemarks").value.trim();
+  if(!Number.isFinite(amount)||amount<=0||!Number.isInteger(days)||days<0){alert("Enter valid approved amount and credit days.");return}
+  result=await s.rpc("credit_approve_request",{p_request_id:id,p_approved_amount:amount,p_approved_credit_days:days,p_remarks:remarks||null});
+ }else{
+  const reason=document.getElementById("cooReviewRemarks").value.trim();
+  if(!reason){alert("Reason is mandatory for Hold/Reject.");return}
+  result=await s.rpc(action==="HOLD"?"credit_hold_request":"credit_reject_request",{p_request_id:id,p_reason:reason});
+ }
+ if(result.error){alert(result.error.message);return}
+ closeCooReview();
+ await loadRequestsPanel();
+}
+
 function msg(id,t){const e=document.getElementById(id);e.textContent=t;e.style.display="block"}
 async function load(){const {data:{user}}=await s.auth.getUser();if(!user){location.href="credit-login.html";return}const p=await s.from("credit_users").select("employee_name,email,role,is_active").eq("id",user.id).maybeSingle();if(p.error||!p.data||p.data.role!=="COO"||!p.data.is_active){await s.auth.signOut();location.href="credit-login.html";return}document.getElementById("user").textContent=p.data.employee_name+" • COO";
 await loadAuditLog();
