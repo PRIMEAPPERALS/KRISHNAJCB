@@ -50,7 +50,7 @@ button{border:0;border-radius:8px;padding:11px 16px;font-weight:700;cursor:point
 </section>
 </main>
 <script>
-let retailRows=[],lubeRows=[],schemeRows=[],settlement=[];
+let retailRows=[],lubeRows=[],schemeRows=[],settlement=[],loadedMode='';
 const $=id=>document.getElementById(id);
 const norm=v=>String(v??'').trim().toLowerCase().replace(/[\s._/-]+/g,'');
 const num=v=>{if(v===null||v===undefined||v==='')return 0;const n=Number(String(v).replace(/[,₹]/g,''));return Number.isFinite(n)?n:0};
@@ -78,9 +78,21 @@ return rows;
 function dateVal(v){if(v instanceof Date)return new Date(v.getFullYear(),v.getMonth(),v.getDate());if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);return d?new Date(d.y,d.m-1,d.d):null}const d=new Date(v);return Number.isNaN(d.getTime())?null:new Date(d.getFullYear(),d.getMonth(),d.getDate())}
 function dateText(d){return d?d.toLocaleDateString('en-IN'):'Invalid date'}
 function fmt(v){return Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2})}
-function loadCombined(wb){const rn=findSheet(wb,['Retail']),ln=findSheet(wb,['Lube master','Lube Master']),sn=findSheet(wb,['Scheme']);if(!rn||!ln||!sn)throw new Error('Combined workbook must contain Retail, Lube master and Scheme sheets.');retailRows=parseRetail(sheetRows(wb,rn));lubeRows=parseLube(sheetRows(wb,ln));schemeRows=readSchemeSheet(wb,sn);}
+function showLoadedCounts(source){
+$('status').textContent=source+' loaded successfully: '+retailRows.length+' retail lines, '+lubeRows.length+' lube master items, '+schemeRows.length+' scheme slabs.';
+$('status').className='status success';
+}
+function loadCombined(wb){
+const rn=findSheet(wb,['Retail']),ln=findSheet(wb,['Lube master','Lube Master']),sn=findSheet(wb,['Scheme']);
+if(!rn||!ln||!sn)throw new Error('Combined workbook must contain Retail, Lube master and Scheme sheets.');
+retailRows=parseRetail(sheetRows(wb,rn));lubeRows=parseLube(sheetRows(wb,ln));schemeRows=readSchemeSheet(wb,sn);
+if(!retailRows.length||!lubeRows.length||!schemeRows.length)throw new Error('Workbook read result: '+retailRows.length+' retail lines, '+lubeRows.length+' lube master items, '+schemeRows.length+' scheme slabs. Check sheet headings.');
+loadedMode='combined';
+$('retailFile').value='';$('lubeFile').value='';$('schemeFile').value='';
+showLoadedCounts('Combined workbook');
+}
 $('combinedBtn').addEventListener('click',async()=>{const inp=document.createElement('input');inp.type='file';inp.accept='.xlsx,.xls';inp.onchange=async()=>{try{const wb=await readFile(inp.files[0]);loadCombined(wb);$('retailFile').value='';$('lubeFile').value='';$('schemeFile').value='';$('status').textContent='Loaded combined workbook: '+retailRows.length+' retail lines, '+lubeRows.length+' lube master items, '+schemeRows.length+' scheme slabs.';$('status').className='status success'}catch(e){showError(e.message)}};inp.click()});
-async function readIndividual(){if(!$('retailFile').files[0]||!$('lubeFile').files[0]||!$('schemeFile').files[0])throw new Error('Please select all three files, or use the combined workbook button.');const [rw,lw,sw]=await Promise.all([$ ('retailFile').files[0],$('lubeFile').files[0],$('schemeFile').files[0]].map(readFile));retailRows=parseRetail(sheetRows(rw,rw.SheetNames[0]));lubeRows=parseLube(sheetRows(lw,lw.SheetNames[0]));schemeRows=readSchemeSheet(sw,sw.SheetNames[0]);$('status').textContent='Files read: '+retailRows.length+' retail lines, '+lubeRows.length+' lube master items, '+schemeRows.length+' scheme slabs.';$('status').className='status '+(retailRows.length&&lubeRows.length&&schemeRows.length?'success':'error');}
+async function readIndividual(){if(!$('retailFile').files[0]||!$('lubeFile').files[0]||!$('schemeFile').files[0])throw new Error('Please select all three files, or use the combined workbook button.');const [rw,lw,sw]=await Promise.all([$ ('retailFile').files[0],$('lubeFile').files[0],$('schemeFile').files[0]].map(readFile));retailRows=parseRetail(sheetRows(rw,rw.SheetNames[0]));lubeRows=parseLube(sheetRows(lw,lw.SheetNames[0]));schemeRows=readSchemeSheet(sw,sw.SheetNames[0]);loadedMode='individual';showLoadedCounts('Three source files');$('status').textContent='Files read: '+retailRows.length+' retail lines, '+lubeRows.length+' lube master items, '+schemeRows.length+' scheme slabs.';$('status').className='status '+(retailRows.length&&lubeRows.length&&schemeRows.length?'success':'error');}
 function showError(msg){$('status').textContent=msg;$('status').className='status error'}
 function calculate(){
 if(!retailRows.length||!lubeRows.length||!schemeRows.length)throw new Error('File validation failed. Retail lines: '+retailRows.length+'; Lube master items: '+lubeRows.length+'; Scheme slabs: '+schemeRows.length+'. Please check the file headers and sheet contents.');
@@ -124,7 +136,7 @@ const cols=Object.keys(settlement[0]||{});$('resultTable').querySelector('thead'
 $('resultTable').querySelector('tbody').innerHTML=settlement.map(x=>'<tr class="'+(x.Eligibility==='ELIGIBLE'?'eligible':'reject')+'">'+cols.map(c=>'<td>'+String(x[c]??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</td>').join('')+'</tr>').join('');
 $('dashboard').classList.remove('hidden');$('results').classList.remove('hidden');$('downloadBtn').disabled=false;
 }
-$('processBtn').addEventListener('click',async()=>{try{$('status').textContent='Reading and calculating...';if(!$('retailFile').files[0]||!$('lubeFile').files[0]||!$('schemeFile').files[0]){if(!retailRows.length)throw new Error('Select the combined workbook or all three individual files.')}else await readIndividual();calculate();render();$('status').textContent='Calculation complete. '+settlement.length+' invoices reviewed.';$('status').className='status success'}catch(e){showError(e.message)}});
+$('processBtn').addEventListener('click',async()=>{try{$('status').textContent='Reading and calculating...';if(loadedMode==='combined'){/* use the already loaded combined workbook */}else if($('retailFile').files[0]&&$('lubeFile').files[0]&&$('schemeFile').files[0]){await readIndividual()}else throw new Error('Select all three individual files, or click Use combined Book1.xlsx workbook and choose Book1.xlsx.');calculate();render();$('status').textContent='Calculation complete. '+settlement.length+' invoices reviewed.';$('status').className='status success'}catch(e){showError(e.message)}});
 $('downloadBtn').addEventListener('click',()=>{if(!settlement.length)return;const wb=XLSX.utils.book_new();const detail=XLSX.utils.json_to_sheet(settlement);XLSX.utils.book_append_sheet(wb,detail,'Invoice Settlement');const eligible=settlement.filter(x=>x.Eligibility==='ELIGIBLE');const byBranch=new Map();for(const x of settlement){if(!byBranch.has(x.Branch))byBranch.set(x.Branch,{Branch:x.Branch,Invoices:0,Eligible:0,Rejected:0,'Lube Litres':0,'JCB Share':0,'Dealer Share':0});const b=byBranch.get(x.Branch);b.Invoices++;if(x.Eligibility==='ELIGIBLE')b.Eligible++;else b.Rejected++;b['Lube Litres']+=x['Lube Litres'];b['JCB Share']+=x['JCB Share (50%)'];b['Dealer Share']+=x['Dealer Share'];}XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([...byBranch.values()]),'Branch Summary');const summary=[{Metric:'Invoices reviewed',Value:settlement.length},{Metric:'Eligible invoices',Value:eligible.length},{Metric:'Rejected invoices',Value:settlement.length-eligible.length},{Metric:'JCB share payable',Value:eligible.reduce((s,x)=>s+x['JCB Share (50%)'],0)},{Metric:'Dealer share',Value:settlement.reduce((s,x)=>s+x['Dealer Share'],0)},{Metric:'Common minimum customer discount per litre',Value:20}];XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),'Dashboard');XLSX.writeFile(wb,'Krishna_Lube_Scheme_Settlement_Oct_2026.xlsx')});
 </script>
 </body></html>
