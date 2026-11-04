@@ -62,12 +62,25 @@ function findSheet(wb,terms){return wb.SheetNames.find(n=>terms.some(t=>norm(n).
 function parseRetail(rows){return rows.filter(r=>get(r,['Invoice No'])!==undefined&&get(r,['Part No'])!==undefined)}
 function parseLube(rows){return rows.filter(r=>get(r,['Part No'])!==undefined&&get(r,['Pack Size'])!==undefined)}
 function parseScheme(rows){return rows.filter(r=>get(r,['Slab'])!==undefined||get(r,['Slab Name'])!==undefined)}
+function readSchemeSheet(wb,name){
+const ws=wb.Sheets[name];if(!ws)return [];
+const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+const headerIndex=matrix.findIndex(row=>row.some(v=>norm(v).includes('minimumltrinsingleinvoice'))&&row.some(v=>norm(v).includes('discountrsltr')));
+if(headerIndex<0)return parseScheme(XLSX.utils.sheet_to_json(ws,{defval:null,raw:true}));
+const rows=[];
+for(const row of matrix.slice(headerIndex+1)){
+if(!row||!row.some(v=>v!==null&&v!==''))continue;
+const slab=String(row[1]??'').trim(),minQty=num(row[2]),rate=num(row[3]),maxQty=num(row[4]);
+if(slab&&minQty>0)rows.push({'Slab':slab,'Minimum Litres':minQty,'Discount RS/Ltr':rate,'Maximum Litres':maxQty});
+}
+return rows;
+}
 function dateVal(v){if(v instanceof Date)return new Date(v.getFullYear(),v.getMonth(),v.getDate());if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);return d?new Date(d.y,d.m-1,d.d):null}const d=new Date(v);return Number.isNaN(d.getTime())?null:new Date(d.getFullYear(),d.getMonth(),d.getDate())}
 function dateText(d){return d?d.toLocaleDateString('en-IN'):'Invalid date'}
 function fmt(v){return Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2})}
-function loadCombined(wb){const rn=findSheet(wb,['Retail']),ln=findSheet(wb,['Lube master','Lube Master']),sn=findSheet(wb,['Scheme']);if(!rn||!ln||!sn)throw new Error('Combined workbook must contain Retail, Lube master and Scheme sheets.');retailRows=parseRetail(sheetRows(wb,rn));lubeRows=parseLube(sheetRows(wb,ln));schemeRows=parseScheme(sheetRows(wb,sn));}
+function loadCombined(wb){const rn=findSheet(wb,['Retail']),ln=findSheet(wb,['Lube master','Lube Master']),sn=findSheet(wb,['Scheme']);if(!rn||!ln||!sn)throw new Error('Combined workbook must contain Retail, Lube master and Scheme sheets.');retailRows=parseRetail(sheetRows(wb,rn));lubeRows=parseLube(sheetRows(wb,ln));schemeRows=readSchemeSheet(wb,sn);}
 $('combinedBtn').addEventListener('click',async()=>{const inp=document.createElement('input');inp.type='file';inp.accept='.xlsx,.xls';inp.onchange=async()=>{try{const wb=await readFile(inp.files[0]);loadCombined(wb);$('status').textContent='Loaded combined workbook: '+retailRows.length+' retail lines, '+lubeRows.length+' lube master items, '+schemeRows.length+' scheme slabs.';$('status').className='status success'}catch(e){showError(e.message)}};inp.click()});
-async function readIndividual(){if(!$('retailFile').files[0]||!$('lubeFile').files[0]||!$('schemeFile').files[0])throw new Error('Please select all three files, or use the combined workbook button.');const [rw,lw,sw]=await Promise.all([$ ('retailFile').files[0],$('lubeFile').files[0],$('schemeFile').files[0]].map(readFile));retailRows=parseRetail(sheetRows(rw,rw.SheetNames[0]));lubeRows=parseLube(sheetRows(lw,lw.SheetNames[0]));schemeRows=parseScheme(sheetRows(sw,sw.SheetNames[0]));}
+async function readIndividual(){if(!$('retailFile').files[0]||!$('lubeFile').files[0]||!$('schemeFile').files[0])throw new Error('Please select all three files, or use the combined workbook button.');const [rw,lw,sw]=await Promise.all([$ ('retailFile').files[0],$('lubeFile').files[0],$('schemeFile').files[0]].map(readFile));retailRows=parseRetail(sheetRows(rw,rw.SheetNames[0]));lubeRows=parseLube(sheetRows(lw,lw.SheetNames[0]));schemeRows=readSchemeSheet(sw,sw.SheetNames[0]);}
 function showError(msg){$('status').textContent=msg;$('status').className='status error'}
 function calculate(){
 if(!retailRows.length||!lubeRows.length||!schemeRows.length)throw new Error('Load valid retail, lube master and scheme data first.');
