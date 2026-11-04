@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Krishna Automobiles | Lube Scheme Settlement</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--ink:#172033;--muted:#64748b;--line:#e2e8f0;--bg:#f3f6fb;--navy:#102a43;--blue:#1769aa;--green:#16804a;--red:#b42318}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--ink)}
+header{background:var(--navy);color:white;padding:22px 26px}header h1{margin:0;font-size:23px}header p{margin:6px 0 0;color:#cbd5e1;font-size:13px}
+main{max-width:1400px;margin:22px auto;padding:0 18px}.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 7px #102a430b}
+h2{font-size:17px;margin:0 0 14px}.upload-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.upload{border:1px dashed #9aaabd;border-radius:9px;padding:14px;background:#fbfdff}.upload label{display:block;font-weight:700;font-size:13px;margin-bottom:8px}.upload small{display:block;color:var(--muted);margin-top:7px}
+input[type=file]{width:100%;font-size:12px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+button{border:0;border-radius:8px;padding:11px 16px;font-weight:700;cursor:pointer;background:var(--blue);color:#fff}button.secondary{background:#e8eef5;color:#23364d}button:disabled{opacity:.45;cursor:not-allowed}
+.note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px}.rule{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:13px}.rule strong{color:var(--navy)}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.kpi{padding:14px;border-radius:9px;background:#f7f9fc;border:1px solid var(--line)}.kpi span{display:block;color:var(--muted);font-size:12px}.kpi b{display:block;font-size:22px;margin-top:6px}
+.status{font-size:13px;margin-top:12px;white-space:pre-wrap}.error{color:var(--red)}.success{color:var(--green)}
+.table-wrap{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:8px}table{border-collapse:collapse;width:100%;min-width:1150px;font-size:12px}th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}th{background:#eef3f8;position:sticky;top:0;z-index:1}tr.reject{background:#fff4f2}tr.eligible{background:#f2fbf5}.pill{border-radius:20px;padding:4px 8px;font-weight:700;font-size:11px}.pill.yes{background:#d9f5e5;color:#11643a}.pill.no{background:#ffe0dc;color:#a1261b}
+.hidden{display:none}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+@media(max-width:850px){.upload-grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}header{padding:18px}.kpi b{font-size:19px}}
+</style>
+</head>
+<body>
+<header><h1>Krishna Automobiles — Lube Scheme Settlement</h1><p>Invoice-wise eligibility, JCB contribution and dealer settlement</p></header>
+<main>
+<section class="panel">
+<h2>1. Upload source files</h2>
+<div class="upload-grid">
+<div class="upload"><label>Retail Report (.xlsx)</label><input id="retailFile" type="file" accept=".xlsx,.xls,.csv"><small>Invoice-wise sales report with quantity, campaign and line discount.</small></div>
+<div class="upload"><label>Lube Master (.xlsx / .csv)</label><input id="lubeFile" type="file" accept=".xlsx,.xls,.csv"><small>Must contain Part No and Pack Size. Description is recommended.</small></div>
+<div class="upload"><label>Scheme Master (.xlsx / .csv)</label><input id="schemeFile" type="file" accept=".xlsx,.xls,.csv"><small>Must contain slab, minimum litres, discount ₹/L and maximum litres.</small></div>
+</div>
+<div class="actions"><button id="combinedBtn" class="secondary" type="button">Use combined Book1.xlsx workbook</button><button id="processBtn" type="button">Calculate Settlement</button><button id="downloadBtn" type="button" disabled>Download Excel Settlement</button></div>
+<div class="note"><b>Privacy:</b> Files are processed in this browser and are not uploaded to Supabase by this page. Keep the settlement file private. The page itself does not provide user-login protection.</div>
+<div id="status" class="status">Upload the three sheets separately, or select your combined workbook using the button above.</div>
+</section>
+<section class="panel">
+<h2>2. Scheme rules applied</h2>
+<div class="rule"><span>Scheme dates: <strong>01–12 October 2026</strong></span><span>Common minimum customer discount: <strong>₹20 per litre</strong></span><span>JCB / Dealer share: <strong>50% / 50% of scheme support</strong></span></div>
+<p class="note">Quantity determines the highest qualifying slab. Actual discount below ₹20/L disqualifies the invoice from JCB sharing. Eligible scheme litres are capped at the slab maximum. Any customer discount above the JCB contribution is borne by the dealer.</p>
+</section>
+<section id="dashboard" class="panel hidden">
+<h2>3. Settlement dashboard</h2><div class="kpis">
+<div class="kpi"><span>Total invoices reviewed</span><b id="kTotal">0</b></div><div class="kpi"><span>Eligible invoices</span><b id="kEligible">0</b></div><div class="kpi"><span>Rejected invoices</span><b id="kRejected">0</b></div><div class="kpi"><span>JCB share payable</span><b id="kJcb">₹0</b></div><div class="kpi"><span>Dealer share</span><b id="kDealer">₹0</b></div>
+</div></section>
+<section id="results" class="panel hidden">
+<div class="section-head"><h2>4. Invoice-wise settlement report</h2><span class="note">Green = eligible · Red = rejected</span></div>
+<div class="table-wrap"><table id="resultTable"><thead></thead><tbody></tbody></table></div>
+</section>
+</main>
+<script>
+let retailRows=[],lubeRows=[],schemeRows=[],settlement=[];
+const $=id=>document.getElementById(id);
+const norm=v=>String(v??'').trim().toLowerCase().replace(/[\s._/-]+/g,'');
+const num=v=>{if(v===null||v===undefined||v==='')return 0;const n=Number(String(v).replace(/[,₹]/g,''));return Number.isFinite(n)?n:0};
+const money=v=>'₹'+(Number(v)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+function get(row,names){const keys=Object.keys(row);for(const name of names){const target=norm(name);const key=keys.find(k=>norm(k)===target);if(key!==undefined)return row[key]}return undefined}
+async function readFile(file){const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array',cellDates:true});return wb}
+function sheetRows(wb,name){const ws=wb.Sheets[name];return ws?XLSX.utils.sheet_to_json(ws,{defval:null,raw:true}):[]}
+function findSheet(wb,terms){return wb.SheetNames.find(n=>terms.some(t=>norm(n).includes(norm(t))))}
+function parseRetail(rows){return rows.filter(r=>get(r,['Invoice No'])!==undefined&&get(r,['Part No'])!==undefined)}
+function parseLube(rows){return rows.filter(r=>get(r,['Part No'])!==undefined&&get(r,['Pack Size'])!==undefined)}
+function parseScheme(rows){return rows.filter(r=>get(r,['Slab'])!==undefined||get(r,['Slab Name'])!==undefined)}
+function dateVal(v){if(v instanceof Date)return new Date(v.getFullYear(),v.getMonth(),v.getDate());if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);return d?new Date(d.y,d.m-1,d.d):null}const d=new Date(v);return Number.isNaN(d.getTime())?null:new Date(d.getFullYear(),d.getMonth(),d.getDate())}
+function dateText(d){return d?d.toLocaleDateString('en-IN'):'Invalid date'}
+function fmt(v){return Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2})}
+function loadCombined(wb){const rn=findSheet(wb,['Retail']),ln=findSheet(wb,['Lube master','Lube Master']),sn=findSheet(wb,['Scheme']);if(!rn||!ln||!sn)throw new Error('Combined workbook must contain Retail, Lube master and Scheme sheets.');retailRows=parseRetail(sheetRows(wb,rn));lubeRows=parseLube(sheetRows(wb,ln));schemeRows=parseScheme(sheetRows(wb,sn));}
+$('combinedBtn').addEventListener('click',async()=>{const inp=document.createElement('input');inp.type='file';inp.accept='.xlsx,.xls';inp.onchange=async()=>{try{const wb=await readFile(inp.files[0]);loadCombined(wb);$('status').textContent='Loaded combined workbook: '+retailRows.length+' retail lines, '+lubeRows.length+' lube master items, '+schemeRows.length+' scheme slabs.';$('status').className='status success'}catch(e){showError(e.message)}};inp.click()});
+async function readIndividual(){if(!$('retailFile').files[0]||!$('lubeFile').files[0]||!$('schemeFile').files[0])throw new Error('Please select all three files, or use the combined workbook button.');const [rw,lw,sw]=await Promise.all([$ ('retailFile').files[0],$('lubeFile').files[0],$('schemeFile').files[0]].map(readFile));retailRows=parseRetail(sheetRows(rw,rw.SheetNames[0]));lubeRows=parseLube(sheetRows(lw,lw.SheetNames[0]));schemeRows=parseScheme(sheetRows(sw,sw.SheetNames[0]));}
+function showError(msg){$('status').textContent=msg;$('status').className='status error'}
+function calculate(){
+if(!retailRows.length||!lubeRows.length||!schemeRows.length)throw new Error('Load valid retail, lube master and scheme data first.');
+const master=new Map();for(const r of lubeRows){const p=String(get(r,['Part No','Item Code','Itemcode'])??'').trim().toUpperCase();if(p)master.set(p,{description:get(r,['Description','Item Name'])||'',pack:num(get(r,['Pack Size']))||0})}
+const slabs=schemeRows.map(r=>({name:String(get(r,['Slab','Slab Name'])||'').trim(),minQty:num(get(r,['minimum ltr in single invoice','Minimum Litres','Minimum Ltr','Min Litres'])),rate:num(get(r,['Discount RS/Ltr','Discount per Ltr','Discount Rs/Ltr'])),maxQty:num(get(r,['MAX liter in single invoice','Maximum Litres','Max Litres']))||200})).filter(s=>s.name&&s.minQty>0).sort((a,b)=>b.minQty-a.minQty);
+if(!slabs.length)throw new Error('No usable slab rows found in Scheme Master.');
+const invoices=new Map();
+for(const r of retailRows){
+const part=String(get(r,['Part No'])??'').trim().toUpperCase(),prod=master.get(part);if(!prod)continue;
+const date=dateVal(get(r,['Invoice Date']));const inv=String(get(r,['Invoice No'])??'').trim();const branch=String(get(r,['Branch'])??'').trim();if(!inv||!date)continue;
+const key=[date.toISOString().slice(0,10),branch.toUpperCase(),inv].join('|');
+if(!invoices.has(key))invoices.set(key,{date,inv,branch,tagValues:[],qty:0,lineDiscount:0,parts:new Set(),descriptions:new Set(),hasReturn:false});
+const x=invoices.get(key);x.tagValues.push(String(get(r,['Camp./Scheme','Campaign','Scheme'])??'').trim());x.qty+=num(get(r,['Quantity']));x.lineDiscount+=num(get(r,['Ln Disc Amt','Line Discount Amount']));x.parts.add(part);if(prod.description)x.descriptions.add(prod.description);if(get(r,['Return No','Return Date'])||num(get(r,['Return Val']))!==0)x.hasReturn=true;
+}
+settlement=[];
+for(const x of invoices.values()){
+const tagOk=x.tagValues.some(v=>v.toLowerCase()==='lubes campaign');
+const inWindow=x.date.getFullYear()===2026&&x.date.getMonth()===9&&x.date.getDate()>=1&&x.date.getDate()<=12;
+const discountPerLtr=x.qty>0?x.lineDiscount/x.qty:0;
+const slab=slabs.find(s=>x.qty>=s.minQty)||null;
+let reason='';
+if(!inWindow)reason='Invoice date outside scheme validity (01–12 Oct 2026)';
+else if(!tagOk)reason='Lubes Campaign tag missing';
+else if(!slab)reason='Minimum quantity not achieved for any slab';
+else if(discountPerLtr<20)reason='Customer discount below minimum ₹20 per litre';
+const eligible=!reason;
+const eligibleLitres=eligible?Math.min(x.qty,slab.maxQty):0;
+const schemeSupport=eligible?eligibleLitres*slab.rate:0;
+const jcbShare=schemeSupport*0.5;
+const actualDiscount=x.lineDiscount;
+const dealerShare=eligible?Math.max(0,actualDiscount-jcbShare):actualDiscount;
+settlement.push({'Branch':x.branch,'Invoice Date':dateText(x.date),'Invoice Number':x.inv,'Campaign Tag':tagOk?'Lubes Campaign':'Missing / Other','Lube Litres':x.qty,'Actual Discount Amount':actualDiscount,'Actual Discount ₹/L':discountPerLtr,'Qualified Slab':eligible?slab.name:'NOT ELIGIBLE','Slab Rate ₹/L':eligible?slab.rate:0,'Eligible Litres (Cap Applied)':eligibleLitres,'Scheme Support Amount':schemeSupport,'JCB Share (50%)':jcbShare,'Dealer Share':dealerShare,'Eligibility':eligible?'ELIGIBLE':'REJECTED','Rejected Reason':reason||'','Part Numbers':[...x.parts].join(', '),'Return Flag':x.hasReturn?'CHECK RETURN':'No return found'});
+}
+settlement.sort((a,b)=>a['Branch'].localeCompare(b['Branch'])||a['Invoice Number'].localeCompare(b['Invoice Number']));
+}
+function render(){
+const eligible=settlement.filter(x=>x.Eligibility==='ELIGIBLE'),rejected=settlement.length-eligible.length;
+$('kTotal').textContent=fmt(settlement.length);$('kEligible').textContent=fmt(eligible.length);$('kRejected').textContent=fmt(rejected);
+$('kJcb').textContent=money(settlement.reduce((s,x)=>s+x['JCB Share (50%)'],0));$('kDealer').textContent=money(settlement.reduce((s,x)=>s+x['Dealer Share'],0));
+const cols=Object.keys(settlement[0]||{});$('resultTable').querySelector('thead').innerHTML='<tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr>';
+$('resultTable').querySelector('tbody').innerHTML=settlement.map(x=>'<tr class="'+(x.Eligibility==='ELIGIBLE'?'eligible':'reject')+'">'+cols.map(c=>'<td>'+String(x[c]??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</td>').join('')+'</tr>').join('');
+$('dashboard').classList.remove('hidden');$('results').classList.remove('hidden');$('downloadBtn').disabled=false;
+}
+$('processBtn').addEventListener('click',async()=>{try{$('status').textContent='Reading and calculating...';if(!$('retailFile').files[0]||!$('lubeFile').files[0]||!$('schemeFile').files[0]){if(!retailRows.length)throw new Error('Select the combined workbook or all three individual files.')}else await readIndividual();calculate();render();$('status').textContent='Calculation complete. '+settlement.length+' invoices reviewed.';$('status').className='status success'}catch(e){showError(e.message)}});
+$('downloadBtn').addEventListener('click',()=>{if(!settlement.length)return;const wb=XLSX.utils.book_new();const detail=XLSX.utils.json_to_sheet(settlement);XLSX.utils.book_append_sheet(wb,detail,'Invoice Settlement');const eligible=settlement.filter(x=>x.Eligibility==='ELIGIBLE');const byBranch=new Map();for(const x of settlement){if(!byBranch.has(x.Branch))byBranch.set(x.Branch,{Branch:x.Branch,Invoices:0,Eligible:0,Rejected:0,'Lube Litres':0,'JCB Share':0,'Dealer Share':0});const b=byBranch.get(x.Branch);b.Invoices++;if(x.Eligibility==='ELIGIBLE')b.Eligible++;else b.Rejected++;b['Lube Litres']+=x['Lube Litres'];b['JCB Share']+=x['JCB Share (50%)'];b['Dealer Share']+=x['Dealer Share'];}XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([...byBranch.values()]),'Branch Summary');const summary=[{Metric:'Invoices reviewed',Value:settlement.length},{Metric:'Eligible invoices',Value:eligible.length},{Metric:'Rejected invoices',Value:settlement.length-eligible.length},{Metric:'JCB share payable',Value:eligible.reduce((s,x)=>s+x['JCB Share (50%)'],0)},{Metric:'Dealer share',Value:settlement.reduce((s,x)=>s+x['Dealer Share'],0)},{Metric:'Common minimum customer discount per litre',Value:20}];XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),'Dashboard');XLSX.writeFile(wb,'Krishna_Lube_Scheme_Settlement_Oct_2026.xlsx')});
+</script>
+</body></html>
