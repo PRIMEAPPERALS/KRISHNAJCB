@@ -4,8 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
-  <title>System Status | Krishna Automobiles</title>
+  <title>Not Available | Krishna Automobiles</title>
   <style>
     * { box-sizing: border-box; }
     html, body { min-height: 100%; }
@@ -31,30 +30,11 @@
 </head>
 <body>
   <main role="status" aria-live="polite">
-    <div class="symbol" aria-hidden="true" id="symbol">⚠️</div>
-    <h1 id="heading">SYSTEM STOPPED WORKING</h1>
+    <div class="symbol" aria-hidden="true">🔒</div>
+    <h1>NOT AVAILABLE!!!!!</h1>
     <p class="brand">Krishna Automobiles</p>
-    <p class="message" id="message">Please refresh this page once to continue.</p>
+    <p class="message">This application is temporarily unavailable.</p>
     <div class="line" aria-hidden="true"></div>
   </main>
-  <script>
-    (function () {
-      var key = "krishna_system_refresh_seen";
-      var refreshed = false;
-      try {
-        refreshed = sessionStorage.getItem(key) === "yes";
-        if (!refreshed) sessionStorage.setItem(key, "yes");
-      } catch (e) {
-        // If session storage is unavailable, show the unavailable state safely.
-        refreshed = true;
-      }
-      if (refreshed) {
-        document.getElementById("symbol").textContent = "🔒";
-        document.getElementById("heading").textContent = "NOT AVAILABLE!!!!!";
-        document.getElementById("message").textContent = "This application is temporarily unavailable.";
-        document.title = "Not Available | Krishna Automobiles";
-      }
-    })();
-  </script>
 </body>
 </html>
