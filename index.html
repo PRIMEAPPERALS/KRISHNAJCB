@@ -4,78 +4,57 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>Not Available | Krishna Automobiles</title>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <title>System Status | Krishna Automobiles</title>
   <style>
     * { box-sizing: border-box; }
     html, body { min-height: 100%; }
     body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      font-family: Arial, Helvetica, sans-serif;
-      color: #f8fafc;
+      margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px;
+      font-family: Arial, Helvetica, sans-serif; color: #f8fafc;
       background: radial-gradient(circle at top, #263449 0%, #111827 48%, #080d16 100%);
     }
     main {
-      width: min(100%, 560px);
-      padding: 52px 28px;
-      text-align: center;
-      border: 1px solid rgba(255,255,255,.13);
-      border-radius: 22px;
-      background: rgba(255,255,255,.055);
-      box-shadow: 0 24px 70px rgba(0,0,0,.35);
+      width: min(100%, 560px); padding: 52px 28px; text-align: center;
+      border: 1px solid rgba(255,255,255,.13); border-radius: 22px;
+      background: rgba(255,255,255,.055); box-shadow: 0 24px 70px rgba(0,0,0,.35);
     }
-    .lock {
-      width: 76px;
-      height: 76px;
-      margin: 0 auto 26px;
-      display: grid;
-      place-items: center;
-      border-radius: 50%;
-      color: #fecaca;
-      background: rgba(239,68,68,.14);
-      font-size: 36px;
+    .symbol {
+      width: 76px; height: 76px; margin: 0 auto 26px; display: grid; place-items: center;
+      border-radius: 50%; color: #fecaca; background: rgba(239,68,68,.14); font-size: 36px;
     }
-    h1 {
-      margin: 0;
-      font-size: clamp(30px, 7vw, 46px);
-      line-height: 1.12;
-      letter-spacing: .02em;
-      color: #fff;
-    }
-    .brand {
-      margin: 18px 0 0;
-      font-size: 17px;
-      font-weight: 700;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: #cbd5e1;
-    }
-    .message {
-      margin: 22px auto 0;
-      max-width: 390px;
-      color: #aebccd;
-      font-size: 15px;
-      line-height: 1.65;
-    }
-    .line {
-      width: 58px;
-      height: 3px;
-      margin: 28px auto 0;
-      border-radius: 99px;
-      background: #ef4444;
-    }
+    h1 { margin: 0; font-size: clamp(30px, 7vw, 46px); line-height: 1.12; letter-spacing: .02em; color: #fff; }
+    .brand { margin: 18px 0 0; font-size: 17px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #cbd5e1; }
+    .message { margin: 22px auto 0; max-width: 390px; color: #aebccd; font-size: 15px; line-height: 1.65; }
+    .line { width: 58px; height: 3px; margin: 28px auto 0; border-radius: 99px; background: #ef4444; }
   </style>
 </head>
 <body>
   <main role="status" aria-live="polite">
-    <div class="lock" aria-hidden="true">🔒</div>
-    <h1>NOT AVAILABLE!!!!!</h1>
+    <div class="symbol" aria-hidden="true" id="symbol">⚠️</div>
+    <h1 id="heading">SYSTEM STOPPED WORKING</h1>
     <p class="brand">Krishna Automobiles</p>
-    <p class="message">This application is temporarily unavailable.</p>
+    <p class="message" id="message">Please refresh this page once to continue.</p>
     <div class="line" aria-hidden="true"></div>
   </main>
+  <script>
+    (function () {
+      var key = "krishna_system_refresh_seen";
+      var refreshed = false;
+      try {
+        refreshed = sessionStorage.getItem(key) === "yes";
+        if (!refreshed) sessionStorage.setItem(key, "yes");
+      } catch (e) {
+        // If session storage is unavailable, show the unavailable state safely.
+        refreshed = true;
+      }
+      if (refreshed) {
+        document.getElementById("symbol").textContent = "🔒";
+        document.getElementById("heading").textContent = "NOT AVAILABLE!!!!!";
+        document.getElementById("message").textContent = "This application is temporarily unavailable.";
+        document.title = "Not Available | Krishna Automobiles";
+      }
+    })();
+  </script>
 </body>
 </html>
